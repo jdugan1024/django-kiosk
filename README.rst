@@ -32,7 +32,9 @@ You can create pages by creating a KioskItem of type Page.  A page is an image
 that you define clickable regions for.  The root page is called index, so the
 first page you should create should have a name of index.  Create this index
 page and upload an image via the admin interface.  Once that page is created
-you should be able to see your image by going to: http://localhost:8000/.
+you should be able to see your image by going to: http://localhost:8000/.  The
+current templates assume that the pages are 1080p (1920x1080 pixels).
+
 
 Creating popups
 ...............
@@ -40,6 +42,7 @@ Creating popups
 You can create popups by creating a KioskItem of type Popup.  A popup is the
 content for a popup.  The default template expects the images included to be
 300 pixels wide.  
+
 
 Creating links
 ..............
