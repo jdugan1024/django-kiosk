@@ -3,6 +3,7 @@ import StringIO
 from django.http import Http404, HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
+from django.views.decorators.csrf import csrf_exempt
 
 try:
     import json
@@ -20,6 +21,7 @@ def index(request, page=None):
     return render_to_response('kiosk/index.html',
             {"page": page}, context_instance=RequestContext(request))
 
+@csrf_exempt
 def loc_data(request, page):
     page = get_object_or_404(KioskItem, name=page, type='page')
 
