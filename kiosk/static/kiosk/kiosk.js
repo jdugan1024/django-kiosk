@@ -45,11 +45,11 @@ var kiosk = (function() {
     console.log("do_click", link);
     if (link[0] == '/') {
       console.log("page");
-      window.location = "/kiosk/" + link.slice(1);
+      window.location = "/" + link.slice(1);
     } else {
-      console.log("popup", '/kiosk/_popup/'+link.slice(1));
+      console.log("popup", '/_popup/'+link.slice(1));
       $.fancybox.open({
-        href: '/kiosk/_popup/' + link.slice(1),
+        href: '/_popup/' + link.slice(1),
         title: '',
         type: 'ajax',
         maxWidth: 800,
@@ -117,11 +117,11 @@ var kiosk = (function() {
         'height': $(e).height()
       });
     });
-    $.post('/kiosk/_loc/'+page, {'links': JSON.stringify(l)});
+    $.post('/_loc/'+page, {'links': JSON.stringify(l)});
   }
 
   function load_locations() {
-    $.getJSON('/kiosk/_loc/'+page, function(data) {
+    $.getJSON('/_loc/'+page, function(data) {
       $.each(data, function(k, v) {
         var link = v.link;
         delete v['link']
@@ -136,7 +136,7 @@ var kiosk = (function() {
   }
 
   function load_links() {
-    $.getJSON('/kiosk/_links/', function(data) {
+    $.getJSON('/_links/', function(data) {
       links = data;
       $.each(links, function(k, v) {
         $("#link").append('<option value="' + v[0] + '">' + v[1] + '</option>');
@@ -224,7 +224,7 @@ var kiosk = (function() {
       $.fancybox.close();
       $("#reset-message").dialog("close");
     } else {
-      window.location = "/kiosk/";
+      window.location = "/";
     }
   };
 
