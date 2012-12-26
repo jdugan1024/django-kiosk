@@ -8,8 +8,11 @@
         {% endautoescape %}
       </div>
       <div class="images" width="300px">
-        {% if page.image %}
-        <img width="300px" src="/scinet_media/kiosk/images/{{ page.image }}">
+        {% if page.popup_image1 %}
+        <img width="300px" src="{{ page.popup_image1.url }}">
+        {% endif %}
+        {% if page.popup_image2 %}
+        <img width="300px" src="{{ page.popup_image2.url }}">
         {% endif %}
         {% if page.url %}
         <img src="https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl={{ page.url }}">
