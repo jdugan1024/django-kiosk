@@ -1,0 +1,10 @@
+---
+title: Ciena 5410 Service Aggregation Switch
+image: Ciena_5410_SAS_DoorOff_FL.png
+url: http://ciena.com/
+text: |
+  Next-generation networking to meet increasing bandwidth demand.
+  Ciena's 5410 Service Aggregation Switch is a Carrier Ethernet/MPLS service aggregation platform that provides terabit switching capacity, massive service scalability, carrier-class resiliency, and a cutting-edge feature set that supports advanced QoS, OAM, and L2VPN capabilities.
+  The 5410 features ten 100 Gb/s-capable line module slots, 1 Tb/s full duplex switching capacity, and fully redundant common equipment that supports six-9s reliability and ensures service continuity.
+  By incorporating the latest innovations in Ethernet switching technology and control plane protocols, the 5410 enables service providers to keep pace with constantly increasing demand for bandwidth capacity and service density in metro networks to support mobile backhaul and Ethernet transport applications, business VPNs, and business and residential triple play services.
+  For more information, visit our booth or ciena.com.
