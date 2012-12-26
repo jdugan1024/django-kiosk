@@ -1,0 +1,136 @@
+<html>
+  <head>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="viewport" content="initial-scale = 0.53;" />
+
+    <script type="text/javascript"
+        src="https://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
+    <script type="text/javascript"
+        src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css">
+
+
+    <script type="text/javascript"
+      src="{{ STATIC_URL }}kiosk/fancybox/lib/jquery.mousewheel-3.0.6.pack.js"></script>
+    <link rel="stylesheet" href="{{ STATIC_URL }}kiosk/fancybox/jquery.fancybox.css?v=2.0.6"
+    type="text/css" media="screen" />
+    <script type="text/javascript"
+      src="{{ STATIC_URL }}kiosk/fancybox/jquery.fancybox.pack.js?v=2.0.6"></script>
+    <script type="text/javascript"
+      src="{{ STATIC_URL }}kiosk/jquery.jeditable.js?v=1.7.1"></script>
+
+    <script type="text/javascript"
+      src="{{ STATIC_URL }}kiosk/jquery.idle-timer.js?v=0.9.100511"></script>
+    <script type="text/javascript"
+      src="{{ STATIC_URL }}kiosk/jquery.timer.js"></script>
+
+    <script type="text/javascript" src="{{ STATIC_URL }}kiosk/kiosk.js"></script>
+
+    <script type="text/javascript">
+      $(document).ready(function() {
+        {% if user.is_staff %}
+        kiosk.init("{{ page.name }}", true);
+        {% else %}
+        kiosk.init("{{ page.name }}", false);
+        {% endif %}
+      });
+    </script>
+
+
+<style type="text/css" media="screen">
+body{
+	font-family: "Lucida Grande", "Lucida Sans Unicode", Geneva, Arial, Helvetica, sans-serif;
+	font-size: small;
+        line-height: 140%;
+        color: #303030;
+        margin: 0px;
+        overflow: hidden;
+    }
+
+a{ color: #303030; }
+a:hover{ color: black; }
+
+img.image{ display: none; }
+
+h1 { font-size: 25px; line-height: 30px; }
+
+#imagemap {
+	margin: 0px;
+	padding: 0px;
+  background: transparent url({{ page.page_image.url }}) top left no-repeat;
+	width: 1920px;
+	height: 1080px;
+	position: relative;
+}
+
+.content {
+  background-color: white;
+}
+.fancybox-skin {
+  background-color: white;
+}
+
+.qr-caption {
+  text-align: center;
+}
+
+.main_text {
+  float: left;
+  width: 495px;
+}
+
+.images {
+  margin-left: 500px;
+}
+
+.box-wrapper {
+  background-color: white;
+}
+
+.image_button {
+    position: absolute;
+  }
+
+img.floatRight { float: left; margin: 5px; }
+
+
+#editor_mode {
+    top: 0px;
+    left: 0px;
+    border: 4px solid #0f0;
+    color: #0f0;
+    visibility: hide;
+    position: absolute;
+    display: none;
+}
+input.text { margin-bottom:12px; width:95%; padding: .4em; }
+fieldset { padding:0; border:0; margin-top:25px; }
+.ui-dialog .ui-state-error { padding: .3em; }
+.validate_tips { border: 1px solid transparent; padding: 0.3em; }
+#dialog-form { display: none; }
+#reset-message { display: none; }
+</style>
+
+</head>
+<body>
+  <div id="imagemap">
+    <div id="editor_mode">EDIT</div>
+</div>
+<div id="dialog-form" title="Create new link">
+    <p class="validate_tips">All form fields are required.</p>
+    <form>
+    <fieldset>
+        <label for="link">Link</label>
+        <select name="link" id="link">
+        </select>
+    </fieldset>
+    </form>
+</div>
+<div id="reset-message" title="Resettting kiosk">
+  <p>
+  Are you still there?  Tap 'Cancel' within <span id="countdown">10</span>
+  seconds to prevent the kiosk from resetting.
+  </p>
+  </p>
+</div>
+</body>

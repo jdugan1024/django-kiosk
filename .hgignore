@@ -1,0 +1,12 @@
+syntax: glob
+*.db
+*.pyc
+*.swp
+.Python
+.env
+bin
+django-kiosk.env
+django_kiosk.egg-info
+include
+kiosk_example/uploads
+lib
