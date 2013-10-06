@@ -1,4 +1,8 @@
+import os
+
 from django.db import models
+from django.core.files.storage import FileSystemStorage
+from django.conf import settings
 
 def rename_wrapper(suffix=""):
     def rename(inst, filename):
@@ -8,6 +12,15 @@ def rename_wrapper(suffix=""):
             return 'kiosk_%s/%s__%s' % (inst.type, inst.name, suffix)
 
     return rename
+
+class OverwriteStorage(FileSystemStorage):
+    def get_available_name(self, name):
+        """just overwrite the file, don't preserve it"""
+        print "we got name {0}".format(name)
+        if self.exists(name):
+            backup = os.path.join(settings.MEDIA_ROOT, name + ".last")
+            os.rename(os.path.join(settings.MEDIA_ROOT, name), backup)
+        return name
 
 class KioskItem(models.Model):
     ITEM_TYPES = (
@@ -20,13 +33,13 @@ class KioskItem(models.Model):
    
     # only valid when type == 'page'
     page_image = models.ImageField(blank=True, null=True,
-            upload_to=rename_wrapper())
+            upload_to=rename_wrapper(), storage=OverwriteStorage())
 
     # only valid when type == 'popup'
     popup_image1 = models.ImageField(blank=True, null=True, 
-            upload_to=rename_wrapper(suffix="1"))
+            upload_to=rename_wrapper(suffix="1"), storage=OverwriteStorage())
     popup_image2 = models.ImageField(blank=True, null=True, 
-            upload_to=rename_wrapper(suffix="2"))
+            upload_to=rename_wrapper(suffix="2"), storage=OverwriteStorage())
     url = models.URLField(blank=True, null=True)
     text = models.TextField(blank=True, null=True)
 
