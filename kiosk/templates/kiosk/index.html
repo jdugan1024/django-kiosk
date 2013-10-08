@@ -3,8 +3,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="viewport" content="initial-scale = 0.53;" />
 
+    <link href="{{ STATIC_URL }}kiosk/css/bootstrap.min.css" rel="stylesheet" media="screen">
     <script type="text/javascript"
         src="https://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
+    <script type="text/javascript"
+          src="{{ STATIC_URL }}kiosk/js/bootstrap.min.js"></script>
+    <script type="text/javascript"
+          src="{{ STATIC_URL }}kiosk/js/bootstrap-filestyle.min.js"></script>
     <script type="text/javascript"
         src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css">
@@ -45,6 +50,7 @@ body{
         overflow: hidden;
     }
 
+.modal-body { max-height: 800px; }
 a{ color: #303030; }
 a:hover{ color: black; }
 
@@ -95,15 +101,9 @@ img.floatRight { float: left; margin: 5px; }
 #editor_mode {
     top: 0px;
     left: 0px;
-    border: 4px solid #0f0;
-    color: #0f0;
-    visibility: hide;
     position: absolute;
     display: none;
 }
-input.text { margin-bottom:12px; width:95%; padding: .4em; }
-fieldset { padding:0; border:0; margin-top:25px; }
-.ui-dialog .ui-state-error { padding: .3em; }
 .validate_tips { border: 1px solid transparent; padding: 0.3em; }
 #dialog-form { display: none; }
 #reset-message { display: none; }
@@ -112,8 +112,130 @@ fieldset { padding:0; border:0; margin-top:25px; }
 </head>
 <body>
   <div id="imagemap">
-    <div id="editor_mode">EDIT</div>
-</div>
+    <div id="editor_mode">
+      <div class="btn-group">
+        <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">Edit
+         <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu">
+         <li><a href="#updatePageBackground" role="button" data-toggle="modal">Update page (b)ackground</a></li>
+         <li><a href="#addNewPage" role="button" data-toggle="modal">Add a (n)ew page</a></li>
+         <li><a href="#addNewPopup"role="button" data-toggle="modal">Add a new (p)opup</a></li>
+         <li><a href="#addLink" role="button" data-toggle="modal">Add a (l)ink</a></li>
+        </ul>
+      </div>
+      <div id="messages"></div>
+    </div>
+  </div>
+
+  <div id="updatePageBackground" class="modal hide" tabindex="-1" role="dialog">
+    <div class="modal-header">
+     <button type="button" class="close" data-dismiss="modal">x</button>
+     <h3>Update background image</h3>
+   </div>
+   <div class="modal-body">
+    <p>Update background image for this page.</p>
+    <div id="updatePageBackgroundAlerts"></div>
+    <form id="updatePageBackgroundForm">
+      <fieldset>
+        <input id="updatePageBackgroundFile" type="file" class="filestyle">
+        {% csrf_token %}
+      </fieldset>
+    </form>
+  </div>
+   <div class="modal-footer">
+    <button class="btn" data-dismiss="modal">Close</button>
+    <button class="btn btn-primary">Update</button>
+   </div>
+  </div>
+
+  <div id="addNewPage" class="modal hide" tabindex="-1" role="dialog">
+    <div class="modal-header">
+     <button type="button" class="close" data-dismiss="modal">x</button>
+     <h3>Add a new page</h3>
+   </div>
+   <div class="modal-body">
+    <form>
+      <fieldset>
+        <label>Name</label>
+        <input name="name" type="text" placeholder="Name of page">
+        <span class="help-block">Name of page, this will appear in the URL.</span>
+        <label>Title</label>
+        <input name="title" type="text" placeholder="Title of page">
+        <span class="help-block">Title of page, this is a descriptive summary of the page.</span>
+        <label>Image</label>
+        <input name="page_image" id="newPageFile" type="file" class="filestyle">
+        <span class="help-block">Image file for the page.</span>
+        <input type="hidden" name="type" value="page">
+        {% csrf_token %}
+      </fieldset>
+    </form>
+   </div>
+   <div class="modal-footer">
+    <button class="btn" data-dismiss="modal">Close</button>
+    <button class="btn btn-primary">Add</button>
+   </div>
+  </div>
+  
+  <div id="addNewPopup" class="modal hide" tabindex="-1" role="dialog">
+    <div class="modal-header">
+     <button type="button" class="close" data-dismiss="modal">x</button>
+     <h3>Add a new popup</h3>
+   </div>
+   <div class="modal-body">
+    <form>
+      <fieldset>
+        <label>Name</label>
+        <input name="name" type="text" placeholder="Name of page">
+        <span class="help-block">Name of page, this will appear in the URL.</span>
+        <label>Title</label>
+        <input name="title" type="text" placeholder="Title of page">
+        <span class="help-block">Title of page, this is a descriptive summary of the page.</span>
+        <label>Image 1</label>
+        <input name="popup_image1" id="newPopupFile1" type="file" class="filestyle">
+        <span class="help-block">First image file for this popup.</span>
+        <label>Image 2</label>
+        <input name="popup_image2" id="newPopupFile2" type="file" class="filestyle">
+        <span class="help-block">Second image file for this popup.</span>
+        <label>URL</label>
+        <input name="url" type="text" placeholder="URL">
+        <span class="help-block">URL for further information, will be displayed as a QR code.</span>
+        <label>Text</label>
+        <textarea name="text" rows="5" placeholder="HTML Here"></textarea>
+        <span class="help-block">Text content for this popup.
+        <input type="hidden" name="type" value="popup">
+        {% csrf_token %}
+      </fieldset>
+    </form>
+   </div>
+   <div class="modal-footer">
+    <button class="btn" data-dismiss="modal">Close</button>
+    <button type="submit" class="btn btn-primary">Add</button>
+   </div>
+  </div>
+  
+  <div id="addLink" class="modal hide" tabindex="-1" role="dialog">
+    <div class="modal-header">
+     <button type="button" class="close" data-dismiss="modal">x</button>
+     <h3>Add link</h3>
+   </div>
+   <div class="modal-body">
+    <p>Define a rectangle for a link.</p>
+    <form>
+      <fieldset>
+        <label>Target</label>
+        <select id="links">
+        </select>
+        <span class="help-block">Target for new link</span>
+      </fieldset>
+    </form>
+   </div>
+   <div class="modal-footer">
+    <button class="btn" data-dismiss="modal">Close</button>
+    <button class="btn btn-primary">Add</button>
+   </div>
+ </div>
+
 <div id="dialog-form" title="Create new link">
     <p class="validate_tips">All form fields are required.</p>
     <form>
@@ -124,11 +246,16 @@ fieldset { padding:0; border:0; margin-top:25px; }
     </fieldset>
     </form>
 </div>
-<div id="reset-message" title="Resettting kiosk">
-  <p>
-  Are you still there?  Tap 'Cancel' within <span id="countdown">10</span>
-  seconds to prevent the kiosk from resetting.
-  </p>
-  </p>
+<div id="resetPopup" class="modal hide" tabindex="-1" role="dialog">
+  <div class="modal-header">
+    <h3>Are you still there?</h3>
+  </div>
+  <div class="modal-body">
+    Tap 'Stay on page' within <span id="countdown">10</span> seconds to prevent the kiosk from resetting.
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-primary">Stay on page</button>
+  </div>
+</div>
 </div>
 </body>

@@ -1,6 +1,7 @@
 import os
 
 from django.db import models
+from django.forms import ModelForm, ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 
@@ -27,7 +28,7 @@ class KioskItem(models.Model):
             ('page', 'Page'),
             ('popup', 'Popup'),
             )
-    name = models.SlugField(max_length=256)
+    name = models.SlugField(max_length=256, unique=True)
     title = models.CharField(max_length=256, blank=True, null=True)
     type = models.CharField(max_length=8, choices=ITEM_TYPES)
    
@@ -62,4 +63,35 @@ class KioskPageLinkLocation(models.Model):
 
     def __str__(self):
         return "%s -> %s" % (self.page.name, self.link.name)
+
+
+
+# --- Forms for the models above
+
+
+class KioskItemForm(ModelForm):
+    class Meta:
+        model = KioskItem
+
+    def clean(self):
+        cleaned_data = super(KioskItemForm, self).clean()
+
+        item_type = cleaned_data.get('type')
+        if item_type == 'page':
+            pass 
+        elif item_type == 'popup':
+            img1 = cleaned_data.get('popup_image1')
+            img2 = cleaned_data.get('popup_image2')
+            if img1 is None and img2 is None:
+                raise ValidationError("Must have at least one image")
+
+        if cleaned_data.get('text') is None:
+            raise ValidationError("Must supply text")
+
+        return cleaned_data
+
+
+class KioskPageLinkLocationForm(ModelForm):
+    class Meta:
+        model = KioskPageLinkLocation
 

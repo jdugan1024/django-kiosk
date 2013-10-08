@@ -7,6 +7,7 @@ var kiosk = (function() {
   var can_edit = false;
 
   function edit_mode() {
+    stop_idle_timer();
     mode = "edit";
     $("#editor_mode").show();
     $(".image_button").resizable().draggable().css(
@@ -27,6 +28,7 @@ var kiosk = (function() {
   };
 
   function view_mode() {
+    start_idle_timer();
     mode = "view";
     $("#editor_mode").hide();
     $(".image_button").resizable('destroy').draggable('destroy').css(
@@ -76,7 +78,7 @@ var kiosk = (function() {
   function handle_keypress(event) {
     if(in_dialog) { 
       if (event.which == 13) { event.preventDefault(); }
-      console.log("kb event, in dialog");
+      //console.log("kb event, in dialog");
       return;
     }
     console.log("keypress", event.which);
@@ -94,12 +96,21 @@ var kiosk = (function() {
       } else {
         $("body").css("overflow", "hidden");
       }
+    } else if(mode == "edit" && event.which == 98) { // b
+      event.preventDefault();
+      $("#updatePageBackground").modal("show")
+    } else if(mode == "edit" && event.which == 108) { // l
+      event.preventDefault();
+      $("#addLink").modal("show");
+    } else if(mode == "edit" && event.which == 110) { // n
+      event.preventDefault();
+      $("#addNewPage").modal("show");    
+    } else if(mode == "edit" && event.which == 112) { // p
+      event.preventDefault();
+      $("#addNewPopup").modal("show")
     } else if(mode == "edit" && event.which == 115) { // s
       console.log("save");
       save_locations();
-    } else if(mode == "edit" && event.which == 110) { // n
-      event.preventDefault();
-      $("#dialog-form").dialog("open");
     } else {
       console.log("unknown keypress");
     }
@@ -117,7 +128,11 @@ var kiosk = (function() {
         'height': $(e).height()
       });
     });
+    console.log("alert mssages soon!");
     $.post('/_loc/'+page, {'links': JSON.stringify(l)});
+    console.log("alert mssages now!");
+    $("#messages").html('<div class="alert alert-success">Links saved</div>');
+    window.setTimeout(function() { $("#messages .alert").alert('close').removeClass("alert-success"); }, 2000);
   }
 
   function load_locations() {
@@ -139,62 +154,130 @@ var kiosk = (function() {
     $.getJSON('/_links/', function(data) {
       links = data;
       $.each(links, function(k, v) {
-        $("#link").append('<option value="' + v[0] + '">' + v[1] + '</option>');
+        $("#links").append('<option value="' + v[0] + '">' + v[0] + '</option>');
       });
     });
   };
 
+  function do_add_new_page() {
+    console.log('new page');
+    var data = new FormData($("#addNewPage form")[0]);
+
+    $.ajax({
+      url: '_kiosk_item/',
+      type: 'POST',
+      data: data,
+      processData: false,
+      contentType: false,
+      success: function(response) {
+        var data = $.parseJSON(response);
+        console.log("data:", data);
+        if (data.status == "OK") {
+          console.log("page ok");
+          $("#addNewPage").modal("hide");
+          $("#addNewPage form")[0].reset();
+          $("#messages").html('<div class="alert alert-success">Page added.</div>');
+          window.setTimeout(function() { $("#messages .alert").alert('close').removeClass("alert-success"); }, 2000);
+          link_div(data.link);
+          edit_mode();
+          load_links();
+        } else {
+          console.log("popup err: ", data.errors);
+        }
+      }
+    });
+  }
+
+  function do_add_new_popup() {
+    console.log("add new popup");
+    var fields = ["name", "title", "url", "text", "type", "csrfmiddlewaretoken"];
+    var data = new FormData($("#addNewPopup form")[0]);
+    var i, k, v;
+
+    $.ajax({
+      url: '_kiosk_item/' + page,
+      type: 'POST',
+      data: data,
+      processData: false,
+      contentType: false,
+      success: function(response) {
+        var data = $.parseJSON(response);
+        console.log("data:", data);
+        if (data.status == "OK") {
+          console.log("popup ok");
+          $("#addNewPopup").modal("hide");
+          $("#addNewPopup form")[0].reset();
+          $("#messages").html('<div class="alert alert-success">Popup added.</div>');
+          window.setTimeout(function() { $("#messages .alert").alert('close').removeClass("alert-success"); }, 2000);
+          link_div(data.link);
+          edit_mode();
+          load_links();
+        } else {
+          console.log("popup err: ", data.errors);
+        }
+      }
+    });
+  }
+
+  function do_add_link() {
+    var link = $("#links").val();
+    console.log("add link: ", link);
+    link_div(link);
+    edit_mode();
+    $("#addLink").modal('hide');
+  }
+
+  function do_update_page_background() {
+    var file = $("#updatePageBackground :file")[0].files[0];
+    var csrf_token = $('input[name="csrfmiddlewaretoken"]').val();
+    var formdata = new FormData();
+    formdata.append('file_upload', file);
+    formdata.append('csrfmiddlewaretoken', csrf_token);
+    $.ajax({
+        url: '_update_page_background/' + page,
+        type: 'POST',
+        data: formdata,
+        processData: false,
+        contentType: false,
+        success: function (response) {
+          var data = $.parseJSON(response);
+          if (data.status === "OK") {
+            var d = new Date();
+            var url = "media/kiosk_page/index?ts=" + d.getTime();
+            console.log("updating to", url);
+            $("#imagemap").css("background-image", "url(" + url + ")");
+            $('#updatePageBackground').modal('hide');
+            $("#updatePageBackgroundForm")[0].reset();
+          } else {
+            console.log("BOOM");
+            $("#updatePageBackgroundAlerts")
+              .html(data.status)
+              .addClass("alert alert-error");
+          }
+        }
+    });
+  }
+
   function create_dialogs() {
-    $( "#dialog-form" ).dialog({
-      autoOpen: false,
-      height: 300,
-      width: 350,
-      modal: true,
-      buttons: {
-        "Create new link": function() {
-          var name = $("#name").val();
-          var link = $("#link").val();
-          var valid = true;
+    $("#addNewPage .btn-primary").on("click",
+      function(event){ do_add_new_page(event); });
 
-          console.log("create", name, link);
+    $("#updatePageBackground .btn-primary").on("click",
+      function(event){ do_update_page_background(event); });
+    $("#updatePageBackground").on("show", 
+      function(event) { $("#updatePageBackgroundAlerts").html("").removeClass("alert alert-error"); });
 
-          if ( valid ) {
-            edit_mode();
-            $( this ).dialog( "close" );
-            link_div(link);
-            edit_mode();
-          }
-        },
-        Cancel: function() {
-          $( this ).dialog( "close" );
-        }
-      },
-      close: function() {
-        in_dialog = 0;
-      },
-      open: function() {
-        in_dialog = 1;
-        $("#dialog-form").keypress(function(e) {
-          if (e.which == $.ui.keyCode.ENTER) {
-            $(this).parent().find("button:eq(0)").trigger("click");
-          }
-        });
-      }
-    });
-    $("#reset-message").dialog({
-      modal: true,
-      autoOpen: false,
-      zIndex: 9000,
-      buttons: {
-        Cancel: function() {
-          $(this).dialog( "close" );
-        },
-        Reset: function() {
-          $(this).dialog( "close" );
-          reset();
-        }
-      }
-    });
+    $("#resetPopup .btn-primary").on("click",
+      function(event) { $("#resetPopup").modal("hide"); });
+
+    $("#addNewPopup .btn-primary").on("click", 
+      function(event) { do_add_new_popup(event); });
+
+    $("#addLink .btn-primary").on("click", 
+      function(event) { do_add_link(event); });
+
+    $(".modal").on("show", function(event) { in_dialog = true; });
+    $(".modal").on("hide", function(event) { in_dialog = false; });
   };
 
   function update_tips( t ) {
@@ -210,7 +293,7 @@ var kiosk = (function() {
     console.log("idle timeout")
     idle_for = 0;
     $.timer('idle_timer', countdown, 1, {timeout: 11, finishCallback: reset}).start();
-    $("#reset-message").dialog("open");
+    $("#resetPopup").modal("show");
   };
 
   function countdown() {
@@ -221,8 +304,7 @@ var kiosk = (function() {
   function reset() {
     console.log("reset")
     if(page == "index") {
-      $.fancybox.close();
-      $("#reset-message").dialog("close");
+      $("#resetPopup").modal("hide");
     } else {
       window.location = "/";
     }
@@ -234,6 +316,18 @@ var kiosk = (function() {
     $.timer('idle_timer', null);
     $("#reset-message").dialog("close");
   };
+
+  function start_idle_timer() {
+    idle_for = 0;
+    // only run the idle timeout code on the actual kiosk
+    $.idleTimer(30000);
+    $(document).bind("idle.idleTimer", idle);
+    $(document).bind("active.idleTimer", active);
+  }
+
+  function stop_idle_timer() {
+    $.idleTimer('destroy');
+  }
 
   return {
     init : function(pagename, can_edit)
@@ -254,10 +348,7 @@ var kiosk = (function() {
         // scrollbars when running on the kiosk
         $("body").css("overflow", "visible");
       } else {
-        // only run the idle timeout code on the actual kiosk
-        $.idleTimer(30000);
-        $(document).bind("idle.idleTimer", idle);
-        $(document).bind("active.idleTimer", active);
+        start_idle_timer();
       }
     }
   }
