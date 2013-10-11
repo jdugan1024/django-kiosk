@@ -4,40 +4,8 @@
     <meta name="viewport" content="initial-scale = 0.53;" />
 
     <link href="{{ STATIC_URL }}kiosk/css/bootstrap.min.css" rel="stylesheet" media="screen">
-    <script type="text/javascript"
-        src="https://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
-    <script type="text/javascript"
-          src="{{ STATIC_URL }}kiosk/js/bootstrap.min.js"></script>
-    <script type="text/javascript"
-          src="{{ STATIC_URL }}kiosk/js/bootstrap-filestyle.min.js"></script>
-    <script type="text/javascript"
-        src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css">
-
-
-    <link rel="stylesheet" href="{{ STATIC_URL }}kiosk/fancybox/jquery.fancybox.css?v=2.0.6"
-    type="text/css" media="screen" />
-    <script type="text/javascript"
-      src="{{ STATIC_URL }}kiosk/fancybox/jquery.fancybox.pack.js?v=2.0.6"></script>
-    <script type="text/javascript"
-      src="{{ STATIC_URL }}kiosk/jquery.jeditable.js?v=1.7.1"></script>
-
-    <script type="text/javascript"
-      src="{{ STATIC_URL }}kiosk/jquery.idle-timer.js?v=0.9.100511"></script>
-    <script type="text/javascript"
-      src="{{ STATIC_URL }}kiosk/jquery.timer.js"></script>
-
-    <script type="text/javascript" src="{{ STATIC_URL }}kiosk/kiosk.js"></script>
-
-    <script type="text/javascript">
-      $(document).ready(function() {
-        {% if user.is_staff %}
-        kiosk.init("{{ page.name }}", true);
-        {% else %}
-        kiosk.init("{{ page.name }}", false);
-        {% endif %}
-      });
-    </script>
+    <link rel="stylesheet" href="{{ STATIC_URL }}kiosk/fancybox/jquery.fancybox.css?v=2.0.6" type="text/css" media="screen" />
 
 
 <style type="text/css" media="screen">
@@ -258,4 +226,36 @@ img.floatRight { float: left; margin: 5px; }
   </div>
 </div>
 </div>
+
+<script type="text/javascript"
+    src="https://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
+<script type="text/javascript"
+      src="{{ STATIC_URL }}kiosk/js/bootstrap.min.js"></script>
+<script type="text/javascript"
+      src="{{ STATIC_URL }}kiosk/js/bootstrap-filestyle.min.js"></script>
+<script type="text/javascript"
+    src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
+
+<script type="text/javascript"
+  src="{{ STATIC_URL }}kiosk/js/underscore-min.js"></script>
+<script type="text/javascript"
+  src="{{ STATIC_URL }}kiosk/js/backbone-min.js"></script>
+
+<script type="text/javascript"
+  src="{{ STATIC_URL }}kiosk/fancybox/jquery.fancybox.pack.js?v=2.0.6"></script>
+<script type="text/javascript"
+  src="{{ STATIC_URL }}kiosk/jquery.jeditable.js?v=1.7.1"></script>
+
+<script type="text/javascript"
+  src="{{ STATIC_URL }}kiosk/jquery.idle-timer.js?v=0.9.100511"></script>
+<script type="text/javascript"
+  src="{{ STATIC_URL }}kiosk/jquery.timer.js"></script>
+
+<script type="text/javascript" src="{{ STATIC_URL }}kiosk/kiosk.js"></script>
+
+<script type="text/javascript">
+  $(document).ready(function() {
+    kiosk.init("{{ page.name }}", "{{ user.is_staff }}" === "True" ? true : false);
+  });
+</script>
 </body>
