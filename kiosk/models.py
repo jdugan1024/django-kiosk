@@ -25,9 +25,9 @@ class OverwriteStorage(FileSystemStorage):
 
 class KioskItem(models.Model):
     ITEM_TYPES = (
-            ('page', 'Page'),
-            ('popup', 'Popup'),
-            )
+        ('page', 'Page'),
+        ('popup', 'Popup'),
+    )
     name = models.SlugField(max_length=256, unique=True)
     title = models.CharField(max_length=256, blank=True, null=True)
     type = models.CharField(max_length=8, choices=ITEM_TYPES)
@@ -46,9 +46,36 @@ class KioskItem(models.Model):
 
     class Meta:
         ordering = ('name', )
+        unique_together = (("name", "type"),)
 
     def __str__(self):
         return "%s %s" % (self.name, self.type)
+
+    def serialize(self):
+        d = {}
+        d['id'] = self.name
+        d['name'] = self.name
+        d['title'] = self.title
+
+        if self.type == 'page':
+            if self.page_image:
+                d['page_image'] = self.page_image.url
+            else:
+                d['page_image'] = ""
+        else:
+            d['url'] = self.url
+            d['text'] = self.text
+            if self.popup_image1: 
+                d['popup_image1'] = self.popup_image1.url
+            else:
+                d['popup_image1'] = ""
+
+            if self.popup_image2: 
+                d['popup_image2'] = self.popup_image2.url
+            else:
+                d['popup_image2'] = ""
+        return d
+
 
 class KioskPageLinkLocation(models.Model):
     top = models.IntegerField()
