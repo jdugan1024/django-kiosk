@@ -29,7 +29,8 @@ h1 { font-size: 25px; line-height: 30px; }
 #imagemap {
 	margin: 0px;
 	padding: 0px;
-  background: transparent url({{ page.page_image.url }}) top left no-repeat;
+  /*background: transparent url({{ page.page_image.url }}) top left no-repeat;*/
+  background-color: #000000;
 	width: 1920px;
 	height: 1080px;
 	position: relative;
@@ -61,7 +62,22 @@ h1 { font-size: 25px; line-height: 30px; }
 
 .image_button {
     position: absolute;
-  }
+/*    border: 1px dashed red;*/
+}
+
+.kiosk-popup {
+  width: 800px;
+  margin-left: -400px;
+}
+
+.image_button .link {
+  display: none;
+  font-size: 18px;
+  width: 100%;
+  text-align: center;
+  height: 20px;
+  border: 1px solid green;
+}
 
 img.floatRight { float: left; margin: 5px; }
 
@@ -86,15 +102,42 @@ img.floatRight { float: left; margin: 5px; }
          <span class="caret"></span>
         </button>
         <ul class="dropdown-menu">
-         <li><a href="#updatePageBackground" role="button" data-toggle="modal">Update page (b)ackground</a></li>
-         <li><a href="#addNewPage" role="button" data-toggle="modal">Add a (n)ew page</a></li>
-         <li><a href="#addNewPopup"role="button" data-toggle="modal">Add a new (p)opup</a></li>
-         <li><a href="#addLink" role="button" data-toggle="modal">Add a (l)ink</a></li>
+         <li><a href="#" id="editThisPageButton" role="button">Edit (t)his page</a></li>
+         <li><a href="#" id="newPopupButton" role="button">Add a new (p)opup</a></li>
+         <li><a href="#" id="newLinkButton" role="button">Add a (l)ink</a></li>
+         <li><a href="#" id="newPageButton" role="button">Add a (n)ew page</a></li>
         </ul>
       </div>
       <div id="messages"></div>
     </div>
-  </div>
+    <script type="text/template" id="popupTemplate">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">x</button>
+          <h3><%= popup.get('title') %></h3>
+      </div>
+      <div class="modal-body">
+        <div class="main_text" width="495px">
+           <%= popup.get('text') %>
+        </div>
+        <div class="images" width="300px">
+          <% if (popup.get('popup_image1')) { %>
+          <img width="300px" src="<%= popup.get('popup_image1') %>">
+          <% } %>
+          <% if (popup.get('popup_image2')) { %>
+          <img width="300px" src="<%= popup.get('popup_image2') %>">
+          <% } %>
+          <% if (popup.get('url')) { %>
+          <img src="https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=<%= popup.get('url') %>">
+          <p class="qr-caption">Scan QR code for more information.</p>
+          <% } %>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </script>
+  <div id="popup" class="modal hide kiosk-popup"></div>
 
   <div id="updatePageBackground" class="modal hide" tabindex="-1" role="dialog">
     <div class="modal-header">
@@ -117,7 +160,7 @@ img.floatRight { float: left; margin: 5px; }
    </div>
   </div>
 
-  <div id="addNewPage" class="modal hide" tabindex="-1" role="dialog">
+  <script type="text/template" id="editPageDialogTemplate">
     <div class="modal-header">
      <button type="button" class="close" data-dismiss="modal">x</button>
      <h3>Add a new page</h3>
@@ -143,9 +186,11 @@ img.floatRight { float: left; margin: 5px; }
     <button class="btn" data-dismiss="modal">Close</button>
     <button class="btn btn-primary">Add</button>
    </div>
+  </script>
+  <div id="editPageDialog" class="modal hide" tabindex="-1" role="dialog">
   </div>
   
-  <div id="addNewPopup" class="modal hide" tabindex="-1" role="dialog">
+  <div id="editPopupDialog" class="modal hide" tabindex="-1" role="dialog">
     <div class="modal-header">
      <button type="button" class="close" data-dismiss="modal">x</button>
      <h3>Add a new popup</h3>
@@ -181,28 +226,31 @@ img.floatRight { float: left; margin: 5px; }
     <button type="submit" class="btn btn-primary">Add</button>
    </div>
   </div>
-  
-  <div id="addLink" class="modal hide" tabindex="-1" role="dialog">
+
+  <script type="text/template" id="editLinkDialogTemplate">  
     <div class="modal-header">
-     <button type="button" class="close" data-dismiss="modal">x</button>
-     <h3>Add link</h3>
-   </div>
-   <div class="modal-body">
-    <p>Define a rectangle for a link.</p>
-    <form>
-      <fieldset>
-        <label>Target</label>
-        <select id="links">
-        </select>
-        <span class="help-block">Target for new link</span>
-      </fieldset>
-    </form>
-   </div>
-   <div class="modal-footer">
-    <button class="btn" data-dismiss="modal">Close</button>
-    <button class="btn btn-primary">Add</button>
-   </div>
- </div>
+    <button type="button" class="close" data-dismiss="modal">x</button>
+      <h3>Add link</h3>
+    </div>
+    <div class="modal-body">
+      <p>Define a rectangle for a link.</p>
+      <form>
+        <fieldset>
+          <label>Target</label>
+          <select id="links">
+          </select>
+          <span class="help-block">Target for new link</span>
+        </fieldset>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" data-dismiss="modal">Close</button>
+      <button class="btn btn-primary add-btn">Add</button>
+    </div>
+  </script>
+
+  <div id="editLinkDialog" class="modal hide" tabindex="-1" role="dialog">
+  </div>
 
 <div id="dialog-form" title="Create new link">
     <p class="validate_tips">All form fields are required.</p>
@@ -255,7 +303,9 @@ img.floatRight { float: left; margin: 5px; }
 
 <script type="text/javascript">
   $(document).ready(function() {
-    kiosk.init("{{ page.name }}", "{{ user.is_staff }}" === "True" ? true : false);
+    //kiosk.init("{{ page.name }}", "{{ user.is_staff }}" === "True" ? true : false);
+    var app = kiosk.Controller;
+    app.init("{{ user.is_staff }}" === "True" ? true : false);
   });
 </script>
 </body>

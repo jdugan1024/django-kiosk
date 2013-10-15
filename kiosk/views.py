@@ -5,6 +5,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.views.decorators.csrf import csrf_exempt
 from django.core import serializers
+from django.http import Http404
 
 try:
     import json
@@ -123,3 +124,24 @@ def kiosk_item(request, item=None):
         r['link'] = link
 
     return HttpResponse(json.dumps(dict(status="OK", link=link)))
+
+
+def do_kiosk_item(request, item_type, item_name=None):
+    r = None
+    if request.method == 'GET':
+        if not item_name:
+            r = []
+            for obj in KioskItem.objects.filter(type=item_type):
+                r.append(obj.serialize())
+        else:
+            obj = get_object_or_404(KioskItem, type=item_type, name=item_name)
+            r = obj.serialize()
+
+    return HttpResponse(json.dumps(r))
+
+def kiosk_page(request, page=None):
+    return do_kiosk_item(request, "page", item_name=page)
+
+
+def kiosk_popup(request, popup=None):
+    return do_kiosk_item(request, "popup", item_name=popup)

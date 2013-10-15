@@ -353,3 +353,289 @@ var kiosk = (function() {
     }
   }
 })();
+
+
+(function(kiosk, Backbone, $, _) {
+  kiosk.Controller = {
+    init: function(can_edit) {
+      self = this;
+      console.log("can_edit", can_edit);
+      this.can_edit = can_edit;
+      this.dispatcher = _.clone(Backbone.Events);
+      console.log("models");
+      this.models = {
+        "pageModel": new kiosk.KioskPage(),
+        "linkCollection": new kiosk.KioskLinkCollection(),
+        "popupCollection": new kiosk.KioskPopupCollection()
+      }
+
+      this.models.popupCollection.fetch({
+        'success': function(popups) {
+          console.log("loaded PopupCollection: ", popups, popups.get("infinera"));
+        }
+      });
+
+      console.log("view");
+      this.views = {
+        "pageView": new kiosk.KioskPageView({model: this.models.pageModel, "controller": this}),
+        "linksView": new kiosk.KioskLinkCollectionView({collection: this.models.linkCollection, "controller": this}),
+        "editView": new kiosk.KioskEditView({"controller": this})
+      };
+
+      console.log("router");
+      this.router = new kiosk.Router({"controller": this});
+
+      this.models.pageModel.bind('sync', this.views.pageView.render, this.views.pageView);
+      this.models.linkCollection.bind('sync', this.views.linksView.render, this.views.linksView);
+
+      console.log("links at init:", this.models.linkCollection.length);
+
+      self.in_dialog = false;
+      self.mode = "view";
+
+      $(document).keypress(kiosk.Controller.handle_keypress);
+
+      Backbone.history.start();
+    },
+
+    handle_keypress: function (event) {
+      console.log("keypress_this", self);
+      if(self.in_dialog) { 
+        //if (event.which == 13) { event.preventDefault(); }
+        //console.log("kb event, in dialog");
+        return;
+      }
+      console.log("keypress", event.which);
+      if(event.which == 101 && self.can_edit) { // e
+        if(self.mode == "edit") {
+          //view_mode();
+          self.mode = "view";
+        } else {
+          //edit_mode();
+          self.mode = "edit";
+        }
+        console.log(self.mode + " mode")
+        self.views.editView.render();
+      } else if(event.which == 107) { // k
+        console.log("kiosk toggle");
+        if($("body").css("overflow") == 'hidden') {
+          $("body").css("overflow", "visible");
+        } else {
+          $("body").css("overflow", "hidden");
+        }
+      } else if(self.mode == "edit" && event.which == 108) { // l
+        event.preventDefault();
+        self.dispatcher.trigger("new-link-key");
+      } else if(self.mode == "edit" && event.which == 110) { // n
+        event.preventDefault();
+        self.dispatcher.trigger("new-page-key");
+      } else if(self.mode == "edit" && event.which == 112) { // p
+        event.preventDefault();
+        self.dispatcher.trigger("new-popup-key");
+      } else if(self.mode == "edit" && event.which == 115) { // s
+        console.log("save");
+        save_locations();
+      } else if(self.mode == "edit" && event.which == 116) { // t
+        event.preventDefault();
+        self.dispatcher.trigger("edit-this-page-key");
+      } else {
+        console.log("unknown keypress");
+      }
+    }
+  }
+
+  kiosk.Router = Backbone.Router.extend({
+    routes: {
+      '': "showIndex",
+      ":page":  "showPage"
+    },
+
+    initialize: function(options) {
+      this.controller = options.controller;
+
+      _.bindAll(this, 'showIndex', 'showPage');
+    },
+
+    showIndex: function() {
+      console.log("came in through index, redirect to #index")
+      this.navigate("index", {trigger: true});
+    },
+
+    showPage: function(page) {
+      console.log("show page " + page)
+      this.controller.models.pageModel.set("id", page, {"silent": true});
+      this.controller.models.pageModel.fetch();
+
+      this.controller.models.linkCollection.page = page;
+      this.controller.models.linkCollection.loaded = false;
+      this.controller.models.linkCollection.fetch({
+        success: function(links) { links.loaded = true; }
+      });
+      console.log("show page done");
+    }
+  }),
+
+  kiosk.KioskPage = Backbone.Model.extend({
+    "urlRoot": "/_kiosk_page"
+  }),
+
+  kiosk.KioskLink = Backbone.Model.extend({
+    render: function() {
+      return this;
+    }
+  }),
+
+  kiosk.KioskPopup = Backbone.Model.extend({
+    "urlRoot": "/_kiosk_popup"
+  }),
+
+  kiosk.KioskPopupCollection = Backbone.Collection.extend({
+    "model": kiosk.KioskPopup,
+    "url": "/_kiosk_popup"
+  }),
+
+  kiosk.KioskLinkCollection = Backbone.Collection.extend({
+    model: kiosk.KioskLink,
+    url: function() {
+      var url = window.location.origin + "/_loc/" + this.page;
+      return url;
+    }
+  }),
+
+  // KioskLinkCollectionView manages the divs with class .image_button within the #imagemap div
+
+  kiosk.KioskLinkCollectionView = Backbone.View.extend({
+    el: "#imagemap",
+
+    events: {
+      "click .image_button": "doClick",
+      "click .image_button .link": "editClick"
+    },
+
+    render: function() {
+      var self = this;
+      console.log("render KioskLinkCollectionView", this);
+      this.$(".image_button").remove();
+      _.each(this.collection.models, function(x) { 
+        var css = { top: x.get("top"), left: x.get("left"), width: x.get("width"), height: x.get("height") };
+        self.$el.append(
+          $("<div/>", { "class": "image_button", css: css }).append($("<div/>", { "class": "link", "text": x.get("link") }))
+        );
+     });
+    },
+
+    doClick: function(e) {
+      console.log("click", e, e.currentTarget);
+      if (this.options.controller.mode === "view") {
+        var target = $(e.target).text();
+        console.log("target", target);
+        if (target[0] === "/") {
+          this.options.controller.router.navigate(target.slice(1), {"trigger": true});
+        } else {
+          var popup_details = this.options.controller.models.popupCollection.get(target.slice(1));
+          var template = _.template($('#popupTemplate').html(), {popup: popup_details});
+          var popup = $("#popup");
+          popup.html(template);
+          popup.modal();
+          popup.modal("show");
+        }
+      }
+    },
+
+    editClick: function(e) {
+      console.log("edit click", e);
+    }
+  }),
+
+  // KioskPageView manages setting the page image and other housekeeping
+  kiosk.KioskPageView = Backbone.View.extend({
+    el: "#imagemap",
+
+    render: function () {
+      console.log("render KioskPageView", this, this.model.loaded);
+      if (this.model.get("name")) {
+        var url = this.model.get('page_image');
+        console.log("updating to", url);
+        this.$el.css("background-image", "url(" + url + ")");
+      } else {
+        console.log("do nothing or show loader?")
+      }
+    },
+  })
+
+  kiosk.KioskEditView = Backbone.View.extend({
+    el: "#imagemap",
+
+    events: {
+      "click #editThisPageButton": "editThisPage",
+      "click #newPopupButton": "newPopup",
+      "click #newPageButton": "newPage",
+      "click #newLinkButton": "newLink"
+    },
+
+    initialize: function() {
+      _.bindAll(this, "editThisPage", "newPopup", "newPage", "newLink");
+
+      this.listenTo(this.options.controller.dispatcher, "new-page-key", this.newPage);
+      this.listenTo(this.options.controller.dispatcher, "new-popup-key", this.newPopup);
+      this.listenTo(this.options.controller.dispatcher, "new-link-key", this.newLink);
+      this.listenTo(this.options.controller.dispatcher, "edit-this-page-key", this.editThisPage);
+    },
+
+    render: function () {
+      var mode = this.options.controller.mode;
+
+      if(mode === "edit") {
+        this.$("#editor_mode").show();
+        //stop_idle_timer();
+        this.$(".image_button").resizable().draggable().css(
+          {
+            "border": "2px solid white",
+            "background": "rgba( 255, 255, 191, 0.5)"
+          }).show().off("click");
+        $(".image_button > .link").css({"display": "inline"});
+      } else {
+        //start_idle_timer();
+        $("#editor_mode").hide();
+        $(".image_button").resizable('destroy').draggable('destroy').css(
+          {
+            "border": "none",
+            "background": "none",
+            "color": "none"
+          });
+        $(".image_button > .link").css({"display": "none"});
+      }
+    },
+
+    "editThisPage": function(e) {
+      if (e) { e.preventDefault(); }
+      console.log("edit this page!");
+      return false;
+    },
+
+    "newPopup": function(e) {
+      if (e) { e.preventDefault(); }
+      console.log("newPopup");
+      return false;
+    },
+
+    "newPage": function(e) {
+      if (e) { e.preventDefault(); }
+      console.log("newPage");
+      return false;
+    },
+
+    "newLink": function(e) {
+      if (e) { e.preventDefault(); }
+      console.log("newLink");
+      return false;
+    },
+  });
+
+  kiosk.KioskEditPageDialog = Backbone.View.extend({
+    el: "#editPageDialog",
+
+    render: function() {
+    }
+  });
+})(window.kiosk = window.kiosk || {}, Backbone, jQuery, _);
