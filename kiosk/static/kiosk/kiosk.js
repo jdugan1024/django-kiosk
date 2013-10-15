@@ -588,7 +588,7 @@ var kiosk = (function() {
       if(mode === "edit") {
         this.$("#editor_mode").show();
         //stop_idle_timer();
-        this.$(".image_button").resizable().draggable().css(
+        this.$(".image_button").resizable({handles: "all"}).draggable().css(
           {
             "border": "2px solid white",
             "background": "rgba( 255, 255, 191, 0.5)"
