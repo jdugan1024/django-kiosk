@@ -952,28 +952,30 @@ var kiosk = (function() {
         render: function() {
             var self = this;
             var template = _.template($("#addLinkDialogTemplate").html());
-            this.popup = $("#addLinkDialog");
-            this.popup.html(template({items: this.options.itemCollection.models}));
-            this.popup.modal();
+            this.dialog = $("#addLinkDialog");
+            this.dialog.html(template({items: this.options.itemCollection.models}));
+            this.dialog.modal();
             this.options.rootModel.set("inDialog", true);
-            this.popup.modal("show");
-            this.popup.on("hidden", function() {
+            this.dialog.modal("show");
+            this.dialog.on("hidden", function() {
                 self.options.rootModel.set("inDialog", false);
             });
         },
 
         click: function() {
-            console.log("add link click");
-            console.log("FORM", this.$("form"));
             var link = this.$("select")[0].value;
-            var values = this.$("form").serializeObject();
-            console.log("VAL", values);
             this.model.set("link", link);
             var parts = link.split("/");
             this.model.set("type", parts[0]);
             this.model.set("name", parts[1]);
-            console.log(":MOD:", this.model.attributes);
+            console.log("in click/add", this, this.model);
             this.options.linkCollection.add(this.model);
+            //this.model.save();
+
+            this.dialog.modal("hide");
+            // XXX: without this there were zombies attached to the submit button
+            // XXX: is this the last of the references to this view or are we leaking memory?
+            this.undelegateEvents();
         }
     });
 })(window.kiosk = window.kiosk || {}, Backbone, jQuery, _);
