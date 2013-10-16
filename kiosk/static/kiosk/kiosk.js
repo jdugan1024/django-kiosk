@@ -204,16 +204,16 @@ var kiosk = (function() {
         var data = $.parseJSON(response);
         console.log("data:", data);
         if (data.status == "OK") {
-          console.log("popup ok");
-          $("#addNewPopup").modal("hide");
-          $("#addNewPopup form")[0].reset();
-          $("#messages").html('<div class="alert alert-success">Popup added.</div>');
-          window.setTimeout(function() { $("#messages .alert").alert('close').removeClass("alert-success"); }, 2000);
-          link_div(data.link);
-          edit_mode();
-          load_links();
+            console.log("popup ok");
+            $("#addNewPopup").modal("hide");
+            $("#addNewPopup form")[0].reset();
+            $("#messages").html('<div class="alert alert-success">Popup added.</div>');
+            window.setTimeout(function() { $("#messages .alert").alert('close').removeClass("alert-success"); }, 2000);
+            link_div(data.link);
+            edit_mode();
+            load_links();
         } else {
-          console.log("popup err: ", data.errors);
+            console.log("popup err: ", data.errors);
         }
       }
     });
@@ -356,286 +356,603 @@ var kiosk = (function() {
 
 
 (function(kiosk, Backbone, $, _) {
-  kiosk.Controller = {
-    init: function(can_edit) {
-      self = this;
-      console.log("can_edit", can_edit);
-      this.can_edit = can_edit;
-      this.dispatcher = _.clone(Backbone.Events);
-      console.log("models");
-      this.models = {
-        "pageModel": new kiosk.KioskPage(),
-        "linkCollection": new kiosk.KioskLinkCollection(),
-        "popupCollection": new kiosk.KioskPopupCollection()
-      }
 
-      this.models.popupCollection.fetch({
-        'success': function(popups) {
-          console.log("loaded PopupCollection: ", popups, popups.get("infinera"));
-        }
+    // borrowed from: https://github.com/thomasdavis/backbonetutorials/tree/gh-pages/videos/beginner#jquery-serializeobject 
+    $.fn.serializeObject = function() {
+      var o = {};
+      var a = this.serializeArray();
+      $.each(a, function() {
+          if (o[this.name] !== undefined) {
+              if (!o[this.name].push) {
+                  o[this.name] = [o[this.name]];
+              }
+              o[this.name].push(this.value || '');
+          } else {
+              o[this.name] = this.value || '';
+          }
       });
+      return o;
+    };
 
-      console.log("view");
-      this.views = {
-        "pageView": new kiosk.KioskPageView({model: this.models.pageModel, "controller": this}),
-        "linksView": new kiosk.KioskLinkCollectionView({collection: this.models.linkCollection, "controller": this}),
-        "editView": new kiosk.KioskEditView({"controller": this})
-      };
+    kiosk.Controller = {
+        init: function(can_edit) {
+            self = this;
+            console.log("can_edit", can_edit);
+            this.can_edit = can_edit;
+            this.dispatcher = _.clone(Backbone.Events);
+            console.log("models");
+            this.models = {
+                "rootModel": new kiosk.RootModel(),
+                "pageModel": new kiosk.ItemModel(),
+                "linkCollection": new kiosk.LinkCollection(),
+                "itemCollection": new kiosk.ItemCollection()
+            }
 
-      console.log("router");
-      this.router = new kiosk.Router({"controller": this});
+            this.models.itemCollection.fetch({
+                'success': function(popups) {
+                    console.log("loaded ItemCollection: ", popups, popups.get("infinera"));
+                }
+            });
 
-      this.models.pageModel.bind('sync', this.views.pageView.render, this.views.pageView);
-      this.models.linkCollection.bind('sync', this.views.linksView.render, this.views.linksView);
+            console.log("view");
+            this.views = {
+                "pageView": new kiosk.PageView({model: this.models.pageModel, "controller": this}),
+                "linksView": new kiosk.LinkCollectionDisplayView({collection: this.models.linkCollection, "controller": this}),
+                "editView": new kiosk.EditView({"controller": this})
+            };
 
-      console.log("links at init:", this.models.linkCollection.length);
+            console.log("router");
+            this.router = new kiosk.Router({"controller": this});
 
-      self.in_dialog = false;
-      self.mode = "view";
+            this.models.rootModel.on("change:mode", this.views.editView.render, this.views.editView);
+            this.models.pageModel.bind('sync', this.views.pageView.render, this.views.pageView);
+            this.models.linkCollection.bind('sync', this.views.linksView.render, this.views.linksView);
+            this.models.linkCollection.bind('remove', this.views.linksView.render, this.views.linksView);
+            this.models.linkCollection.bind('add', this.views.linksView.render, this.views.linksView);
 
-      $(document).keypress(kiosk.Controller.handle_keypress);
+            self.in_dialog = false;
+            self.mode = "view";
 
-      Backbone.history.start();
-    },
+            $(document).keypress(kiosk.Controller.handleKeypress);
 
-    handle_keypress: function (event) {
-      console.log("keypress_this", self);
-      if(self.in_dialog) { 
-        //if (event.which == 13) { event.preventDefault(); }
-        //console.log("kb event, in dialog");
-        return;
-      }
-      console.log("keypress", event.which);
-      if(event.which == 101 && self.can_edit) { // e
-        if(self.mode == "edit") {
-          //view_mode();
-          self.mode = "view";
-        } else {
-          //edit_mode();
-          self.mode = "edit";
+            function readCookie(name) {
+                var nameEQ = name + "=";
+                var ca = document.cookie.split(';');
+                for(var i=0;i < ca.length;i++) {
+                    var c = ca[i];
+                    while (c.charAt(0)==' ') c = c.substring(1,c.length);
+                    if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+                }
+                return null;
+            }
+
+            var csrf = readCookie("csrftoken");
+            if (csrf) {
+                Backbone.originalSync = Backbone.sync;
+                Backbone.sync = function(method, model, options) {
+                    options || (options = {});
+                    options.headers = { "X-CSRFToken": csrf };
+                    return Backbone.originalSync(method,model,options);
+                };
+             }
+
+            Backbone.history.start();
+        },
+
+        handleKeypress: function (event) {
+            console.log("keypress_this", self);
+            if(self.in_dialog) { 
+                //if (event.which == 13) { event.preventDefault(); }
+                //console.log("kb event, in dialog");
+                return;
+            }
+            console.log("keypress", event.which);
+            if(event.which == 101 && self.can_edit) { // e
+                console.log("root mode", self.models.rootModel.get("mode"));
+                if(self.models.rootModel.get("mode") == "edit") {
+                    self.models.rootModel.set("mode", "view");
+                } else {
+                    self.models.rootModel.set("mode", "edit");
+                }
+                console.log(self.models.rootModel.get("mode") + " mode")
+            } else if(event.which == 107) { // k
+                console.log("kiosk toggle");
+                if($("body").css("overflow") == 'hidden') {
+                    $("body").css("overflow", "visible");
+                } else {
+                    $("body").css("overflow", "hidden");
+                }
+            } else if(self.models.rootModel.get("mode") === "edit") {
+                console.log("check edit keys");
+                switch (event.which) {
+                    case 108: // l
+                        event.preventDefault();
+                        self.dispatcher.trigger("new-link-key");
+                        break;
+                    case 110: // n
+                        event.preventDefault();
+                        self.dispatcher.trigger("new-page-key");
+                        break;
+                    case 112: // p
+                        event.preventDefault();
+                        self.dispatcher.trigger("new-popup-key");
+                        break;
+                    case 116: // t
+                        event.preventDefault();
+                        self.dispatcher.trigger("edit-this-page-key");
+                        break;
+                }
+            } else {
+                console.log("unknown keypress");
+            }
         }
-        console.log(self.mode + " mode")
-        self.views.editView.render();
-      } else if(event.which == 107) { // k
-        console.log("kiosk toggle");
-        if($("body").css("overflow") == 'hidden') {
-          $("body").css("overflow", "visible");
-        } else {
-          $("body").css("overflow", "hidden");
+    }
+
+    //
+    // Router
+    //
+    // handles transitions between pages
+    //
+
+    kiosk.Router = Backbone.Router.extend({
+        routes: {
+            '': "showIndex",
+            ":page":  "showPage"
+        },
+
+        initialize: function(options) {
+            this.controller = options.controller;
+            _.bindAll(this, 'showIndex', 'showPage');
+        },
+
+        showIndex: function() {
+            console.log("came in through index, redirect to #index")
+            this.navigate("index", {trigger: true});
+        },
+
+        showPage: function(page) {
+            console.log("show page " + page)
+            this.controller.models.pageModel.set("id", "page/" + page, {"silent": true});
+            this.controller.models.pageModel.fetch();
+
+            this.controller.models.linkCollection.page = page;
+            this.controller.models.linkCollection.loaded = false;
+            this.controller.models.linkCollection.fetch({
+              success: function(links) { links.loaded = true; }
+            });
+            console.log("show page done");
         }
-      } else if(self.mode == "edit" && event.which == 108) { // l
-        event.preventDefault();
-        self.dispatcher.trigger("new-link-key");
-      } else if(self.mode == "edit" && event.which == 110) { // n
-        event.preventDefault();
-        self.dispatcher.trigger("new-page-key");
-      } else if(self.mode == "edit" && event.which == 112) { // p
-        event.preventDefault();
-        self.dispatcher.trigger("new-popup-key");
-      } else if(self.mode == "edit" && event.which == 115) { // s
-        console.log("save");
-        save_locations();
-      } else if(self.mode == "edit" && event.which == 116) { // t
-        event.preventDefault();
-        self.dispatcher.trigger("edit-this-page-key");
-      } else {
-        console.log("unknown keypress");
-      }
-    }
-  }
+    }),
 
-  kiosk.Router = Backbone.Router.extend({
-    routes: {
-      '': "showIndex",
-      ":page":  "showPage"
-    },
+    //
+    // RootModel
+    //
+    // keeps global state
 
-    initialize: function(options) {
-      this.controller = options.controller;
-
-      _.bindAll(this, 'showIndex', 'showPage');
-    },
-
-    showIndex: function() {
-      console.log("came in through index, redirect to #index")
-      this.navigate("index", {trigger: true});
-    },
-
-    showPage: function(page) {
-      console.log("show page " + page)
-      this.controller.models.pageModel.set("id", page, {"silent": true});
-      this.controller.models.pageModel.fetch();
-
-      this.controller.models.linkCollection.page = page;
-      this.controller.models.linkCollection.loaded = false;
-      this.controller.models.linkCollection.fetch({
-        success: function(links) { links.loaded = true; }
-      });
-      console.log("show page done");
-    }
-  }),
-
-  kiosk.KioskPage = Backbone.Model.extend({
-    "urlRoot": "/_kiosk_page"
-  }),
-
-  kiosk.KioskLink = Backbone.Model.extend({
-    render: function() {
-      return this;
-    }
-  }),
-
-  kiosk.KioskPopup = Backbone.Model.extend({
-    "urlRoot": "/_kiosk_popup"
-  }),
-
-  kiosk.KioskPopupCollection = Backbone.Collection.extend({
-    "model": kiosk.KioskPopup,
-    "url": "/_kiosk_popup"
-  }),
-
-  kiosk.KioskLinkCollection = Backbone.Collection.extend({
-    model: kiosk.KioskLink,
-    url: function() {
-      var url = window.location.origin + "/_loc/" + this.page;
-      return url;
-    }
-  }),
-
-  // KioskLinkCollectionView manages the divs with class .image_button within the #imagemap div
-
-  kiosk.KioskLinkCollectionView = Backbone.View.extend({
-    el: "#imagemap",
-
-    events: {
-      "click .image_button": "doClick",
-      "click .image_button .link": "editClick"
-    },
-
-    render: function() {
-      var self = this;
-      console.log("render KioskLinkCollectionView", this);
-      this.$(".image_button").remove();
-      _.each(this.collection.models, function(x) { 
-        var css = { top: x.get("top"), left: x.get("left"), width: x.get("width"), height: x.get("height") };
-        self.$el.append(
-          $("<div/>", { "class": "image_button", css: css }).append($("<div/>", { "class": "link", "text": x.get("link") }))
-        );
-     });
-    },
-
-    doClick: function(e) {
-      console.log("click", e, e.currentTarget);
-      if (this.options.controller.mode === "view") {
-        var target = $(e.target).text();
-        console.log("target", target);
-        if (target[0] === "/") {
-          this.options.controller.router.navigate(target.slice(1), {"trigger": true});
-        } else {
-          var popup_details = this.options.controller.models.popupCollection.get(target.slice(1));
-          var template = _.template($('#popupTemplate').html(), {popup: popup_details});
-          var popup = $("#popup");
-          popup.html(template);
-          popup.modal();
-          popup.modal("show");
+    kiosk.RootModel = Backbone.Model.extend({
+        defaults: {
+            mode: "view"
         }
-      }
-    },
+    });
 
-    editClick: function(e) {
-      console.log("edit click", e);
-    }
-  }),
+    //
+    // Item model 
+    //
+    // details about a kiosk item, either a Page or a Popup
+    // A page is a the top level item and can be though of as a section of the kiosk
+    // The valid fields for an Item of type page are:
+    //
+    //      name: string which is used to refer to the page, it is the id of the page
+    //      title: string which is used when displaying this page
+    //      type: string, always set to 'page' for pages
+    //      page_image: the image to use for the page
+    //
+    //
+    // A popup has details about some section of a page and pops up a small window
+    // with that information.  The valid fields for an Item of type popup are:
+    //
+    //      name: string which is used to refer to the popup, it is the id of the popup
+    //      title: string which is used when displaying this popup
+    //      type: string, always set to 'popup' for popups
+    //      text: string, HTML allowed, text for the body of the popup
+    //      url: a string providing a URL for more information
+    //      popup_image1: an image to be used in the popup
+    //      popup_image2: an image to be used in the popup
+    //
+    // Note: files don't play nicely with PUT
 
-  // KioskPageView manages setting the page image and other housekeeping
-  kiosk.KioskPageView = Backbone.View.extend({
-    el: "#imagemap",
+    kiosk.ItemModel = Backbone.Model.extend({
+        urlRoot: "/_kiosk_item",
 
-    render: function () {
-      console.log("render KioskPageView", this, this.model.loaded);
-      if (this.model.get("name")) {
-        var url = this.model.get('page_image');
-        console.log("updating to", url);
-        this.$el.css("background-image", "url(" + url + ")");
-      } else {
-        console.log("do nothing or show loader?")
-      }
-    },
-  })
+        defaults: {
+            "name": undefined,
+            "title": undefined,
+            "type": undefined,
+  
+            // pages only
+            "page_image": undefined,
+ 
+            // popups only 
+            "text": undefined,
+            "url": undefined,
+            "popup_image1": undefined,
+            "popup_image2": undefined
+        },
 
-  kiosk.KioskEditView = Backbone.View.extend({
-    el: "#imagemap",
+        uploadFile: function(name, csrf_token, data) {
+            //var data = new FormData($("#addNewPopup form")[0]);
+            self = this;
+            $.ajax({
+                url: this.urlRoot + "/" + name,
+                type: 'POST',
+                data: data,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    var data = $.parseJSON(response);
+                    console.log("data:", data);
+                    if (data.status == "OK") {
+                      //$("#messages").html('<div class="alert alert-success">Popup added.</div>');
+                      //window.setTimeout(function() { $("#messages .alert").alert('close').removeClass("alert-success"); }, 2000);
+                      //link_div(data.link);
+                      //edit_mode();
+                      //load_links();
+                      data['csrfmiddlewaretoken'] = csrf_token;
+                      self.set(data);
+                      self.save();
+                    } else {
+                      console.log("popup err: ", data.errors);
+                    }
+                }
+            });
+        }
+    }),
 
-    events: {
-      "click #editThisPageButton": "editThisPage",
-      "click #newPopupButton": "newPopup",
-      "click #newPageButton": "newPage",
-      "click #newLinkButton": "newLink"
-    },
+    //
+    // ItemCollection
+    //
+    // All kiosk items
+    //
 
-    initialize: function() {
-      _.bindAll(this, "editThisPage", "newPopup", "newPage", "newLink");
+    kiosk.ItemCollection = Backbone.Collection.extend({
+        model: kiosk.ItemModel,
+        url: "/_kiosk_item"
+    });
 
-      this.listenTo(this.options.controller.dispatcher, "new-page-key", this.newPage);
-      this.listenTo(this.options.controller.dispatcher, "new-popup-key", this.newPopup);
-      this.listenTo(this.options.controller.dispatcher, "new-link-key", this.newLink);
-      this.listenTo(this.options.controller.dispatcher, "edit-this-page-key", this.editThisPage);
-    },
+    //
+    // Link model
+    //
+    // location and detail of a link
+    //
 
-    render: function () {
-      var mode = this.options.controller.mode;
+    kiosk.Link = Backbone.Model.extend({
+        defaults: {
+            top: 10,
+            left: 10,
+            width: 200,
+            height: 50
+        },
 
-      if(mode === "edit") {
-        this.$("#editor_mode").show();
-        //stop_idle_timer();
-        this.$(".image_button").resizable({handles: "all"}).draggable().css(
-          {
-            "border": "2px solid white",
-            "background": "rgba( 255, 255, 191, 0.5)"
-          }).show().off("click");
-        $(".image_button > .link").css({"display": "inline"});
-      } else {
-        //start_idle_timer();
-        $("#editor_mode").hide();
-        $(".image_button").resizable('destroy').draggable('destroy').css(
-          {
-            "border": "none",
-            "background": "none",
-            "color": "none"
-          });
-        $(".image_button > .link").css({"display": "none"});
-      }
-    },
+        url: function() {
+            return "/_loc/" + this.get("id");
+        }
+    }),
 
-    "editThisPage": function(e) {
-      if (e) { e.preventDefault(); }
-      console.log("edit this page!");
-      return false;
-    },
+    //
+    // LinkCollection
+    //
+    // Links for this page
+    //
 
-    "newPopup": function(e) {
-      if (e) { e.preventDefault(); }
-      console.log("newPopup");
-      return false;
-    },
+    kiosk.LinkCollection = Backbone.Collection.extend({
+        model: kiosk.Link,
+        url: function() {
+            var url = window.location.origin + "/_loc/" + this.page;
+            return url;
+        }
+    }),
 
-    "newPage": function(e) {
-      if (e) { e.preventDefault(); }
-      console.log("newPage");
-      return false;
-    },
+    //
+    // LinkCollectionDisplayView
+    //
+    // manages all the links on the page for "display" mode
+    //
 
-    "newLink": function(e) {
-      if (e) { e.preventDefault(); }
-      console.log("newLink");
-      return false;
-    },
-  });
+    kiosk.LinkCollectionDisplayView = Backbone.View.extend({
+        el: "#LinkCollection",
 
-  kiosk.KioskEditPageDialog = Backbone.View.extend({
-    el: "#editPageDialog",
+        events: {
+          "click .image_button": "click",
+        },
 
-    render: function() {
-    }
-  });
+        render: function() {
+            var self = this;
+            console.log("render LinkCollectionView", this.linkViews, this.options);
+            this.$(".linkItem").remove();
+
+            _.each(this.collection.models, function(model) { 
+                view = new kiosk.LinkView({
+                    model: model,
+                    parentEl: self.$el,
+                    itemCollection: self.options.controller.models.itemCollection,
+                    linkCollection: self.options.controller.models.linkCollection,
+                    rootModel: self.options.controller.models.rootModel,
+                    controller: self.options.controller
+                });
+                self.options.controller.models.rootModel.bind("change:mode", view.changeMode, view);
+                view.render();
+            });
+        }
+    }),
+
+    //
+    // LinkView
+    //
+    // view for each link in LinkCollectionDisplayView in "display" mode
+    // handles clicks on each link by:
+    //    informing the router if it is a page
+    //    rendering a PopupView if it is a popup
+    //
+    // In edit mode:
+    //    handles edit clicks on the link name
+    //    handles delete clicks on the link delete button
+
+    kiosk.LinkView = Backbone.View.extend({
+        events: {
+            "click": "click",
+            "click .linkName": "edit",
+            "click .linkDelete": "delete"
+        },
+
+        initialize: function () {
+            _.bindAll(this, "updatePosition", "updateSize");
+        },
+
+        render: function() {
+            var props = {
+                link: this.model.get("link"),
+                top: this.model.get("top"),
+                left: this.model.get("left"),
+                width: this.model.get("width"),
+                height:this.model.get("height")
+            }
+
+            var link = $(_.template($("#linkTemplate").html(), props));
+            // there should be a way to use setElement to get rid of extra outer </div>
+            //this.$el.html(link);
+            this.setElement(link);
+            this.options.parentEl.append(this.$el);
+            this.changeMode();
+
+            return this;
+        },
+
+        changeMode: function() {
+            var mode = this.options.rootModel.get("mode");
+
+            if (mode === "view") {
+                this.$el.resizable('destroy').draggable('destroy').css({
+                    "border": "none",
+                     "background": "none",
+                     "color": "none"
+                });
+                this.$(".linkName").css({"display": "none"});
+                this.$(".linkDelete").css({"display": "none"});
+                //this.$el.bind("click", this.click, this);
+            } else {
+                this.$el.resizable({
+                    handles: "all",
+                    stop: this.updateSize
+                }).draggable({
+                    stop: this.updatePosition
+                });
+                this.$el.css({
+                    "border": "2px solid white",
+                     "background": "rgba( 255, 255, 191, 0.5)"
+                });
+                this.$(".linkName").css({"display": "inline"});
+                this.$(".linkDelete").css({"display": "inline"});
+            }
+        },
+
+        updatePosition: function(event, ui) {
+            console.log("drag stop", ui.position.left, ui.position.top);
+            this.model.set("left", ui.position.left);
+            this.model.set("top", ui.position.top);
+        },
+
+        updateSize: function(event, ui) {
+            console.log("resize stop", ui.size);
+            this.model.set("width", ui.size.width);
+            this.model.set("height", ui.size.height);
+        },
+
+        click: function(e) {
+            if (this.options.rootModel.get("mode") === "edit") { return; }
+            console.log("LinkItem click", this.model);
+            if (this.model.get("type") == "page") {
+                this.options.controller.router.navigate(this.model.get("name"), {"trigger": true});
+            } else {
+                console.log("item collection", this.options.itemCollection);
+                var popup_details = this.options.itemCollection.findWhere({
+                    name: this.model.get("name"),
+                    type: "popup"
+                });
+                console.log("popup_details", popup_details);
+                var template = _.template($('#popupTemplate').html(), {popup: popup_details});
+                var popup = $("#popup");
+                popup.html(template);
+                popup.modal();
+                popup.modal("show");
+            }
+        },
+
+        edit: function(e) {
+            // the parent div also has a handler but for other events
+            e.stopPropagation();
+            console.log("LinkItem edit click", e);
+        },
+
+        delete: function(e) {
+            e.stopPropagation();
+            console.log("LinkItem delete click", e);
+            this.options.linkCollection.remove(this.model);
+            this.model.destroy();
+        }
+    }),
+
+    //
+    // PageView
+    //
+    // manages setting the page image and other housekeeping
+    //
+
+    kiosk.PageView = Backbone.View.extend({
+        el: "#Page",
+
+        render: function () {
+            console.log("render PageView", this, this.model.loaded);
+            if (this.model.get("name")) {
+                var url = this.model.get('page_image');
+                console.log("updating to", url);
+                this.$el.css("background-image", "url(" + url + ")");
+            } else {
+                console.log("do nothing or show loader?")
+            }
+        },
+    });
+
+    kiosk.EditView = Backbone.View.extend({
+        el: "#EditMenu",
+
+        events: {
+          "click #newPopupButton": "newPopup",
+          "click #newPageButton": "newPage",
+          "click #newLinkButton": "newLink"
+        },
+
+        initialize: function() {
+            _.bindAll(this, "newPopup", "newPage", "newLink");
+
+            this.editItemDialogView = new kiosk.EditItemDialogView();
+
+            this.listenTo(this.options.controller.dispatcher, "new-page-key", this.newItem);
+        },
+
+        render: function () {
+            var mode = this.options.controller.models.rootModel.get("mode");
+            console.log("EditView", mode);
+
+            if(mode === "edit") {
+                this.$el.show();
+                //stop_idle_timer();
+            } else {
+                this.$el.hide();
+                //start_idle_timer();
+            }
+        },
+
+        newPage: function(e) {
+            if (e) { e.preventDefault(); }
+            console.log("newPage");
+            var model = new kiosk.ItemModel({type: "page"});
+            var popup = new kiosk.EditItemDialogView({model: model, action: "Add"});
+            popup.render();
+        },
+
+        newPopup: function(e) {
+            if (e) { e.preventDefault(); }
+            console.log("newItem");
+            var model = new kiosk.ItemModel({type: "popup"});
+            var popup = new kiosk.EditItemDialogView({model: model, action: "Add"});
+            popup.render();
+        },
+
+        newLink: function(e) {
+            if(e) { e.preventDefault(); }
+            console.log("new link", this.options.controller.models);
+            new kiosk.AddLinkDialogView({
+                model: new kiosk.Link(),
+                itemCollection: this.options.controller.models.itemCollection,
+                linkCollection: this.options.controller.models.linkCollection
+            }).render();
+        }
+    });
+
+    //
+    // EditItemDialogView
+    //
+    // Handles editing, creating and deleting Kiosk Items
+    //
+
+    kiosk.EditItemDialogView = Backbone.View.extend({
+        el: "#editItemDialog",
+  
+        events: {
+            "click .btn-primary": "doClick"
+        },
+
+        initialize: function() {
+            _.bindAll(this, "doClick");
+        },
+
+        render: function() {
+            var template = _.template($('#editItemDialogTemplate').html(), {
+                model: this.model, 
+                action: this.options.action
+            });
+            this.popup = $("#editItemDialog");
+            this.popup.html(template);
+            this.popup.modal();
+            this.popup.modal("show"); 
+        },
+
+        doClick: function() {
+            console.log("click in edit page form, this:", this);
+            var formData = this.$("form").serializeObject();
+            console.log("form data", formData);
+            console.log("file: ", $("#newPageFile").val());
+            var data = new FormData(this.$("form")[0]);
+            this.model.uploadFile(formData['name'], formData['csrfmiddlewaretoken'], data);
+        }
+    });
+
+    //
+    // AddLinkDialogView
+    //
+
+    kiosk.AddLinkDialogView = Backbone.View.extend({
+        el: "#addLinkDialog",
+
+        events: {
+            "click .btn-primary": "click"
+        },
+
+        initialize: function() {
+            _.bindAll(this, "click");
+        },
+
+        render: function() {
+            var template = _.template($("#addLinkDialogTemplate").html());
+            this.popup = $("#addLinkDialog");
+            this.popup.html(template({items: this.options.itemCollection.models}));
+            this.popup.modal();
+            this.popup.modal("show");
+            console.log(this.popup);
+        },
+
+        click: function() {
+            console.log("add link click");
+            console.log("FORM", this.$("form"));
+            var link = this.$("select")[0].value;
+            var values = this.$("form").serializeObject();
+            console.log("VAL", values);
+            this.model.set("link", link);
+            var parts = link.split("/");
+            this.model.set("type", parts[0]);
+            this.model.set("name", parts[1]);
+            console.log(":MOD:", this.model.attributes);
+            this.options.linkCollection.add(this.model);
+        }
+    });
 })(window.kiosk = window.kiosk || {}, Backbone, jQuery, _);

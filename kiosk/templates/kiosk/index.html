@@ -26,7 +26,7 @@ img.image{ display: none; }
 
 h1 { font-size: 25px; line-height: 30px; }
 
-#imagemap {
+#Page {
 	margin: 0px;
 	padding: 0px;
   /*background: transparent url({{ page.page_image.url }}) top left no-repeat;*/
@@ -60,29 +60,41 @@ h1 { font-size: 25px; line-height: 30px; }
   background-color: white;
 }
 
-.image_button {
-    position: absolute;
-/*    border: 1px dashed red;*/
-}
-
 .kiosk-popup {
   width: 800px;
   margin-left: -400px;
 }
 
-.image_button .link {
+
+.linkItem {
+    position: absolute;
+/*    border: 1px dashed red;*/
+}
+
+.linkItem .linkName {
   display: none;
   font-size: 18px;
-  width: 100%;
   text-align: center;
+  border: 2px solid green;
+  padding: 2px;
+  background: rgba(204, 255, 204, 0.6);
+}
+
+.linkItem .linkDelete {
+  display: none;
+  font-size: 18px;
   height: 20px;
-  border: 1px solid green;
+  width: 20px;
+  border: 2px solid red;
+  float: right;
+  text-align: center;
+  background: rgba(204, 102, 102, 0.6);
 }
 
 img.floatRight { float: left; margin: 5px; }
 
 
-#editor_mode {
+#EditMenu {
     top: 0px;
     left: 0px;
     position: absolute;
@@ -95,8 +107,10 @@ img.floatRight { float: left; margin: 5px; }
 
 </head>
 <body>
-  <div id="imagemap">
-    <div id="editor_mode">
+  <div id="Page">
+    <div id="LinkCollection">
+    </div>
+    <div id="EditMenu">
       <div class="btn-group">
         <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">Edit
          <span class="caret"></span>
@@ -110,9 +124,18 @@ img.floatRight { float: left; margin: 5px; }
       </div>
       <div id="messages"></div>
     </div>
+
+    <! -- templates -->
+    <script type="text/template" id="linkTemplate">
+    <div class="linkItem" style="top: <%= top %>px; left: <%= left %>px; width: <%= width %>px; height: <%= height %>px;">
+      <div class="linkName"><%= link %></div>
+      <div class="linkDelete">&times;</div>
+    </div>
+    </script>
+
     <script type="text/template" id="popupTemplate">
       <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal">x</button>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
           <h3><%= popup.get('title') %></h3>
       </div>
       <div class="modal-body">
@@ -141,7 +164,7 @@ img.floatRight { float: left; margin: 5px; }
 
   <div id="updatePageBackground" class="modal hide" tabindex="-1" role="dialog">
     <div class="modal-header">
-     <button type="button" class="close" data-dismiss="modal">x</button>
+     <button type="button" class="close" data-dismiss="modal">&times;</button>
      <h3>Update background image</h3>
    </div>
    <div class="modal-body">
@@ -160,50 +183,24 @@ img.floatRight { float: left; margin: 5px; }
    </div>
   </div>
 
-  <script type="text/template" id="editPageDialogTemplate">
-    <div class="modal-header">
-     <button type="button" class="close" data-dismiss="modal">x</button>
-     <h3>Add a new page</h3>
-   </div>
-   <div class="modal-body">
-    <form>
-      <fieldset>
-        <label>Name</label>
-        <input name="name" type="text" placeholder="Name of page">
-        <span class="help-block">Name of page, this will appear in the URL.</span>
-        <label>Title</label>
-        <input name="title" type="text" placeholder="Title of page">
-        <span class="help-block">Title of page, this is a descriptive summary of the page.</span>
-        <label>Image</label>
-        <input name="page_image" id="newPageFile" type="file" class="filestyle">
-        <span class="help-block">Image file for the page.</span>
-        <input type="hidden" name="type" value="page">
-        {% csrf_token %}
-      </fieldset>
-    </form>
-   </div>
-   <div class="modal-footer">
-    <button class="btn" data-dismiss="modal">Close</button>
-    <button class="btn btn-primary">Add</button>
-   </div>
-  </script>
-  <div id="editPageDialog" class="modal hide" tabindex="-1" role="dialog">
-  </div>
+  <div id="editItemDialog" class="modal hide" tabindex="-1" role="dialog"></div>
   
-  <div id="editPopupDialog" class="modal hide" tabindex="-1" role="dialog">
+  <script type="text/template" id="editItemDialogTemplate">
     <div class="modal-header">
-     <button type="button" class="close" data-dismiss="modal">x</button>
-     <h3>Add a new popup</h3>
+     <button type="button" class="close" data-dismiss="modal">&times;</button>
+     <h3><%= action %> <%= model.get("type") %></h3>
    </div>
    <div class="modal-body">
     <form>
       <fieldset>
         <label>Name</label>
-        <input name="name" type="text" placeholder="Name of page">
-        <span class="help-block">Name of page, this will appear in the URL.</span>
+        <input name="name" type="text" placeholder="Name of <%= model.get("type") %>">
+        <span class="help-block">Name of <%= model.get("type") %>, this will appear in the URL.</span>
         <label>Title</label>
-        <input name="title" type="text" placeholder="Title of page">
-        <span class="help-block">Title of page, this is a descriptive summary of the page.</span>
+        <input name="title" type="text" placeholder="Title of <%= model.get("type") %>">
+        <span class="help-block">Title of <%= model.get("type") %>, this is a descriptive summary of the <%= model.get("type") %>.</span>
+
+        <% if(model.get("type") === "popup") { %>
         <label>Image 1</label>
         <input name="popup_image1" id="newPopupFile1" type="file" class="filestyle">
         <span class="help-block">First image file for this popup.</span>
@@ -216,28 +213,35 @@ img.floatRight { float: left; margin: 5px; }
         <label>Text</label>
         <textarea name="text" rows="5" placeholder="HTML Here"></textarea>
         <span class="help-block">Text content for this popup.
-        <input type="hidden" name="type" value="popup">
-        {% csrf_token %}
+        <% } else { %>
+        <label>Page Image</label>
+        <input name="page_image" type="file" class="filestyle">
+        <span class="help-block">Image file for this page.</span>
+        <% } %>
+        <input type="hidden" name="type" value="<%= model.get("type") %>">
       </fieldset>
     </form>
    </div>
    <div class="modal-footer">
     <button class="btn" data-dismiss="modal">Close</button>
-    <button type="submit" class="btn btn-primary">Add</button>
+    <button type="submit" class="btn btn-primary <%= action %>-btn"><%= action %></button>
    </div>
-  </div>
+  </script>
 
-  <script type="text/template" id="editLinkDialogTemplate">  
+  <script type="text/template" id="addLinkDialogTemplate">  
     <div class="modal-header">
-    <button type="button" class="close" data-dismiss="modal">x</button>
-      <h3>Add link</h3>
-    </div>
+      <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h3>Add link</h3>
+      </div>
     <div class="modal-body">
       <p>Define a rectangle for a link.</p>
       <form>
         <fieldset>
           <label>Target</label>
-          <select id="links">
+          <select>
+          <% _.each(items, function(item) { %>
+            <option value="<%= item.get('id') %>"><%= item.get('id') %></option>
+          <% }); %>
           </select>
           <span class="help-block">Target for new link</span>
         </fieldset>
@@ -249,8 +253,7 @@ img.floatRight { float: left; margin: 5px; }
     </div>
   </script>
 
-  <div id="editLinkDialog" class="modal hide" tabindex="-1" role="dialog">
-  </div>
+  <div id="addLinkDialog" class="modal hide" tabindex="-1" role="dialog"> </div>
 
 <div id="dialog-form" title="Create new link">
     <p class="validate_tips">All form fields are required.</p>
