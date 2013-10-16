@@ -233,10 +233,10 @@ img.floatRight { float: left; margin: 5px; }
    </div>
   </script>
 
-  <script type="text/template" id="addLinkDialogTemplate">  
+  <script type="text/template" id="LinkDialogTemplate">
     <div class="modal-header">
       <button type="button" class="close" data-dismiss="modal">&times;</button>
-        <h3>Add link</h3>
+        <h3><%= action %> link</h3>
       </div>
     <div class="modal-body">
       <p>Define a rectangle for a link.</p>
@@ -245,20 +245,24 @@ img.floatRight { float: left; margin: 5px; }
           <label>Target</label>
           <select>
           <% _.each(items, function(item) { %>
+            <% if(link === item.get("id")) { %>
+            <option value="<%= item.get('id') %>" selected><%= item.get('id') %></option>
+            <% } else { %>
             <option value="<%= item.get('id') %>"><%= item.get('id') %></option>
+            <% } %>
           <% }); %>
           </select>
-          <span class="help-block">Target for new link</span>
+          <span class="help-block">Target for link</span>
         </fieldset>
       </form>
     </div>
     <div class="modal-footer">
       <button class="btn" data-dismiss="modal">Close</button>
-      <button class="btn btn-primary">Add</button>
+      <button class="btn btn-primary"><%= action %></button>
     </div>
   </script>
 
-  <div id="addLinkDialog" class="modal hide" tabindex="-1" role="dialog"> </div>
+  <div id="LinkDialog" class="modal hide" tabindex="-1" role="dialog"> </div>
 
 <div id="dialog-form" title="Create new link">
     <p class="validate_tips">All form fields are required.</p>
