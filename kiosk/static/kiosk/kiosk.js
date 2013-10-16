@@ -736,6 +736,7 @@ var kiosk = (function() {
                      "background": "none",
                      "color": "none"
                 });
+                this.$el.removeClass("linkVisible");
                 this.$(".linkName").css({"display": "none"});
                 this.$(".linkDelete").css({"display": "none"});
                 //this.$el.bind("click", this.click, this);
@@ -746,10 +747,7 @@ var kiosk = (function() {
                 }).draggable({
                     stop: this.updatePosition
                 });
-                this.$el.css({
-                    "border": "2px solid white",
-                     "background": "rgba( 255, 255, 191, 0.5)"
-                });
+                this.$el.addClass("linkVisible");
                 this.$(".linkName").css({"display": "inline"});
                 this.$(".linkDelete").css({"display": "inline"});
             }
