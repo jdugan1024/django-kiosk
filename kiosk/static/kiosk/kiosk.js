@@ -834,7 +834,9 @@ var kiosk = (function() {
 
             this.editItemDialogView = new kiosk.EditItemDialogView();
 
-            this.listenTo(this.options.controller.dispatcher, "new-page-key", this.newItem);
+            this.listenTo(this.options.controller.dispatcher, "new-page-key", this.newPage);
+            this.listenTo(this.options.controller.dispatcher, "new-popup-key", this.newPopup);
+            this.listenTo(this.options.controller.dispatcher, "new-link-key", this.newLink);
         },
 
         render: function () {
