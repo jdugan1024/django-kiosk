@@ -23,14 +23,22 @@ def index(request, page=None):
     return render_to_response('kiosk/index.html',
             {"page": page}, context_instance=RequestContext(request))
 
-@csrf_exempt
-def loc_data(request, page):
-    page = get_object_or_404(KioskItem, name=page, type='page')
+#@csrf_exempt
+def loc_data(request, page_name, pk=None):
+    page = get_object_or_404(KioskItem, name=page_name, type='page')
+
+    if request.method == 'GET':
+        l = []
+
+        for link in page.link_locations.all():
+            l.append(link.serialize())
+
+        return HttpResponse(json.dumps(l))
+
+    if not request.user.is_staff:
+        return HttpResponseForbidden("Permission denied.")
 
     if request.method == 'POST':
-        if not request.user.is_staff:
-            return HttpResponseForbidden("Permission denied.")
-
         links = json.loads(str(request.POST['links']))
         page.link_locations.all().delete()
         for link in links:
@@ -40,17 +48,17 @@ def loc_data(request, page):
             kpll.save()
 
         r = json.dumps(dict(status="OK"))
-    elif request.method == 'GET':
-        l = []
-        for lo in page.link_locations.all():
-            if lo.link.type == "page":
-                link = "/" + lo.link.name
-            else:
-                link = "#" + lo.link.name
-            l.append(dict(top=lo.top,left=lo.left,width=lo.width,height=lo.height,link=link))
-        r = json.dumps(l)
+    elif request.method == 'PUT':
+        print request.body
+
+        r = request.body
+    elif request.method == 'DELETE':
+        print "DELETE >{0}< >{1}<".format(page_name, pk)
+        obj = get_object_or_404(KioskPageLinkLocation, pk=pk)
+        obj.delete()
+        return HttpResponse()
     else:
-        return Http404()
+        raise Http404()
 
     return HttpResponse(r)
 
@@ -96,7 +104,7 @@ def update_page_background(request, page):
 
     return HttpResponse(json.dumps(r))
 
-def kiosk_item(request, item=None):
+def not_kiosk_item(request, item=None):
     r = {}
     if request.method == "GET":
         obj = get_object_or_404(KioskItem, name=item)
@@ -126,22 +134,63 @@ def kiosk_item(request, item=None):
     return HttpResponse(json.dumps(dict(status="OK", link=link)))
 
 
-def do_kiosk_item(request, item_type, item_name=None):
+def kiosk_item(request, item_type=None, item_name=None):
     r = None
     if request.method == 'GET':
         if not item_name:
             r = []
-            for obj in KioskItem.objects.filter(type=item_type):
+            for obj in KioskItem.objects.all():
                 r.append(obj.serialize())
         else:
-            obj = get_object_or_404(KioskItem, type=item_type, name=item_name)
+            obj = get_object_or_404(KioskItem, name=item_name)
             r = obj.serialize()
+    elif request.method == "POST":
+        print json.dumps(request.POST, indent=4)
+        for f in request.FILES:
+            print f
+
+        f = KioskItemForm(request.POST, request.FILES)
+        print "VALID?", f.is_valid()
+        if not f.is_valid():
+            print "ERR", f.errors
+            errdict = { 'status' : "Error",
+                       'errors' : [(k, v) for k, v in f.errors.items()] }
+            print errdict
+            return HttpResponse(json.dumps(errdict))
+
+        obj = f.save()
+        r = obj.serialize()
+        r['status'] = "OK"
+    elif request.method == "PUT":
+        obj = get_object_or_404(KioskItem, type=item_type, name=item_name)
+        put_data = json.loads(request.raw_post_data)
+        f = KioskItemForm(put_data, request.FILES, instance=obj)
+        if not f.is_valid():
+            print "ERR", f.error
+            errdict = { 'status' : "Error",
+                       'errors' : [(k, v) for k, v in f.errors.items()] }
+            print errdict
+            return HttpResponse(json.dumps(errdict))
+
+        obj = f.save()
+        r = obj.serialize()
+        r['status'] = "OK"
 
     return HttpResponse(json.dumps(r))
 
-def kiosk_page(request, page=None):
-    return do_kiosk_item(request, "page", item_name=page)
+def update_kiosk_item_images(request, item_type, item_name):
+    print item_type, item_name, request.method
+    if request.method != 'POST':
+        return Http404()
 
+    if item_type not in ['page', 'popup']:
+        return Http404()
 
-def kiosk_popup(request, popup=None):
-    return do_kiosk_item(request, "popup", item_name=popup)
+    obj = get_object_or_404(KioskItem, type=item_type, name=item_name)
+    f = KioskItemForm(request.POST, request.FILES, instance=obj)
+    obj = f.save()
+    print obj
+    r = obj.serialize()
+    r['status'] = "OK"
+
+    return HttpResponse(json.dumps(r))
