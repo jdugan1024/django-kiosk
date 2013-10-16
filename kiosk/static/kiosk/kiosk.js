@@ -628,7 +628,7 @@ var kiosk = (function() {
 
     kiosk.Link = Backbone.Model.extend({
         defaults: {
-            top: 10,
+            top: 50,
             left: 10,
             width: 200,
             height: 50
@@ -706,7 +706,7 @@ var kiosk = (function() {
         },
 
         initialize: function () {
-            _.bindAll(this, "updatePosition", "updateSize");
+            _.bindAll(this, "updatePosition", "updateSize", "changeMode");
         },
 
         render: function() {
@@ -719,9 +719,8 @@ var kiosk = (function() {
             }
 
             var link = $(_.template($("#linkTemplate").html(), props));
-            // there should be a way to use setElement to get rid of extra outer </div>
-            //this.$el.html(link);
             this.setElement(link);
+            // XXX the append must come before the changeMode, why?
             this.options.parentEl.append(this.$el);
             this.changeMode();
 
