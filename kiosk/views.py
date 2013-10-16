@@ -74,19 +74,6 @@ def loc_data(request, page_name, pk=None):
 
     return HttpResponse(r)
 
-def link_data(request):
-    items = KioskItem.objects.order_by("name").all()
-    l = []
-    for item in items:
-        if item.type == 'page':
-            l.append(('/' + item.name, item.name))
-        else:
-            l.append(('#' + item.name, item.name))
-
-    l.sort(key=lambda x: x[1])
-
-    return HttpResponse(json.dumps(l))
-
 def not_kiosk_item(request, item=None):
     r = {}
     if request.method == "GET":
