@@ -635,7 +635,12 @@ var kiosk = (function() {
         },
 
         url: function() {
-            return "/_loc/" + this.get("id");
+            console.log("Link url", this)
+            if (this.isNew()) {
+                return "/_loc/" + this.get("page");
+            } else {
+                return "/_loc/" + this.get("id");
+            }
         }
     }),
 
@@ -757,12 +762,14 @@ var kiosk = (function() {
             console.log("drag stop", ui.position.left, ui.position.top);
             this.model.set("left", ui.position.left);
             this.model.set("top", ui.position.top);
+            this.model.save();
         },
 
         updateSize: function(event, ui) {
             console.log("resize stop", ui.size);
             this.model.set("width", ui.size.width);
             this.model.set("height", ui.size.height);
+            this.model.save();
         },
 
         click: function(e) {
@@ -882,7 +889,7 @@ var kiosk = (function() {
             if(e) { e.preventDefault(); }
             console.log("new link", this.options.controller.models);
             new kiosk.AddLinkDialogView({
-                model: new kiosk.Link(),
+                model: new kiosk.Link({page: this.options.controller.models.pageModel.get("name")}),
                 itemCollection: this.options.controller.models.itemCollection,
                 linkCollection: this.options.controller.models.linkCollection,
                 rootModel: this.options.controller.models.rootModel
@@ -969,7 +976,7 @@ var kiosk = (function() {
             this.model.set("name", parts[1]);
             console.log("in click/add", this, this.model);
             this.options.linkCollection.add(this.model);
-            //this.model.save();
+            this.model.save();
 
             this.dialog.modal("hide");
             // XXX: without this there were zombies attached to the submit button

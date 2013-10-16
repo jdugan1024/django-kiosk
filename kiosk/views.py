@@ -39,21 +39,33 @@ def loc_data(request, page_name, pk=None):
         return HttpResponseForbidden("Permission denied.")
 
     if request.method == 'POST':
-        links = json.loads(str(request.POST['links']))
-        page.link_locations.all().delete()
-        for link in links:
-            link['link'] = KioskItem.objects.get(name=link['link'][1:])
-            link['page'] = page
-            kpll = KioskPageLinkLocation(**link)
-            kpll.save()
-
-        r = json.dumps(dict(status="OK"))
-    elif request.method == 'PUT':
         print request.body
+        data = json.loads(request.body)
+        data['page'] = page
+        data['link'] = get_object_or_404(KioskItem, type=data['type'], name=data['name'])
+        del data['name']
+        del data['type']
 
-        r = request.body
+        obj = KioskPageLinkLocation(**data)
+        obj.save()
+
+        r = json.dumps(obj.serialize())
+    elif request.method == 'PUT':
+        obj = get_object_or_404(KioskPageLinkLocation, pk=pk)
+        data = json.loads(request.body)
+
+        del data['id']
+        del data['page']
+        del data['link']
+        del data['name']
+
+        for k, v in data.iteritems():
+            setattr(obj, k, v)
+
+        obj.save()
+
+        r = json.dumps(obj.serialize())
     elif request.method == 'DELETE':
-        print "DELETE >{0}< >{1}<".format(page_name, pk)
         obj = get_object_or_404(KioskPageLinkLocation, pk=pk)
         obj.delete()
         return HttpResponse()
