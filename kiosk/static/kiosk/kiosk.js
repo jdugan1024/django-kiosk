@@ -773,7 +773,16 @@ var kiosk = (function() {
         },
 
         click: function(e) {
-            if (this.options.rootModel.get("mode") === "edit") { return; }
+            if (this.options.rootModel.get("mode") === "edit") {
+                new kiosk.LinkDialogView({
+                    model: this.model,
+                    itemCollection: this.options.controller.models.itemCollection,
+                    linkCollection: this.options.controller.models.linkCollection,
+                    rootModel: this.options.controller.models.rootModel,
+                    action: "Update"
+                }).render();
+                return;
+            }
             console.log("LinkItem click", this.model);
             if (this.model.get("type") == "page") {
                 this.options.controller.router.navigate(this.model.get("name"), {"trigger": true});
@@ -888,11 +897,12 @@ var kiosk = (function() {
         newLink: function(e) {
             if(e) { e.preventDefault(); }
             console.log("new link", this.options.controller.models);
-            new kiosk.AddLinkDialogView({
+            new kiosk.LinkDialogView({
                 model: new kiosk.Link({page: this.options.controller.models.pageModel.get("name")}),
                 itemCollection: this.options.controller.models.itemCollection,
                 linkCollection: this.options.controller.models.linkCollection,
-                rootModel: this.options.controller.models.rootModel
+                rootModel: this.options.controller.models.rootModel,
+                action: "Add"
             }).render();
         }
     });
@@ -941,11 +951,11 @@ var kiosk = (function() {
     });
 
     //
-    // AddLinkDialogView
+    // LinkDialogView
     //
 
-    kiosk.AddLinkDialogView = Backbone.View.extend({
-        el: "#addLinkDialog",
+    kiosk.LinkDialogView = Backbone.View.extend({
+        el: "#LinkDialog",
 
         events: {
             "click .btn-primary": "click"
@@ -957,9 +967,14 @@ var kiosk = (function() {
 
         render: function() {
             var self = this;
-            var template = _.template($("#addLinkDialogTemplate").html());
-            this.dialog = $("#addLinkDialog");
-            this.dialog.html(template({items: this.options.itemCollection.models}));
+            var template = _.template($("#LinkDialogTemplate").html());
+            this.dialog = $("#LinkDialog");
+            console.log("myid", this.model.get("link"), this.model.attributes);
+            this.dialog.html(template({
+                items: this.options.itemCollection.models,
+                action: this.options.action,
+                link: this.model.get("link")
+            }));
             this.dialog.modal();
             this.options.rootModel.set("inDialog", true);
             this.dialog.modal("show");
@@ -972,11 +987,15 @@ var kiosk = (function() {
             var link = this.$("select")[0].value;
             this.model.set("link", link);
             var parts = link.split("/");
+            console.log("before", this.model.get("type"), this.model.get("name"));
             this.model.set("type", parts[0]);
             this.model.set("name", parts[1]);
-            console.log("in click/add", this, this.model);
+            console.log("after", this.model.get("type"), this.model.get("name"));
+            console.log("in click/add", link, parts, this, this.model);
             this.options.linkCollection.add(this.model);
+            console.log("after", this.model.get("type"), this.model.get("name"));
             this.model.save();
+            console.log("after", this.model.get("type"), this.model.get("name"));
 
             this.dialog.modal("hide");
             // XXX: without this there were zombies attached to the submit button

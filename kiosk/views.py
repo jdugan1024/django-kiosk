@@ -39,7 +39,6 @@ def loc_data(request, page_name, pk=None):
         return HttpResponseForbidden("Permission denied.")
 
     if request.method == 'POST':
-        print request.body
         data = json.loads(request.body)
         data['page'] = page
         data['link'] = get_object_or_404(KioskItem, type=data['type'], name=data['name'])
@@ -56,8 +55,9 @@ def loc_data(request, page_name, pk=None):
 
         del data['id']
         del data['page']
-        del data['link']
+        data['link'] = get_object_or_404(KioskItem, type=data['type'], name=data['name'])
         del data['name']
+        del data['type']
 
         for k, v in data.iteritems():
             setattr(obj, k, v)
