@@ -74,20 +74,6 @@ def loc_data(request, page_name, pk=None):
 
     return HttpResponse(r)
 
-def popup_data(request, page):
-    page = get_object_or_404(KioskItem, name=page, type='popup')
-
-    if request.method == 'POST':
-        print json.dumps(json.loads(request.POST['links']), indent=4)
-        return Http404()
-    elif request.method == 'GET':
-        return render_to_response('kiosk/popup.html',
-            {"page": page}, context_instance=RequestContext(request))
-    else:
-        return Http404()
-
-    return HttpResponse(r)
-
 def link_data(request):
     items = KioskItem.objects.order_by("name").all()
     l = []
@@ -100,21 +86,6 @@ def link_data(request):
     l.sort(key=lambda x: x[1])
 
     return HttpResponse(json.dumps(l))
-
-def update_page_background(request, page):
-    page = get_object_or_404(KioskItem, name=page, type='page')
-
-
-    r = {}
-    if request.FILES and request.FILES.get('file_upload'):
-        f = request.FILES.get('file_upload')
-        page.page_image = f
-        page.save()
-        r['status'] = "OK"
-    else:
-        r['status'] = "Error: no file attached"
-
-    return HttpResponse(json.dumps(r))
 
 def not_kiosk_item(request, item=None):
     r = {}
