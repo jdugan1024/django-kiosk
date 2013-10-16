@@ -117,6 +117,7 @@ class KioskPageLinkLocation(models.Model):
         d['link'] = self.link.backbone_id
         d['name'] = self.link.name
         d['type'] = self.link.type
+        d['page'] = self.page.name
 
         return d
 
