@@ -441,7 +441,7 @@ var kiosk = (function() {
 
         handleKeypress: function (event) {
             console.log("keypress_this", self);
-            if(self.in_dialog) { 
+            if(self.models.rootModel.get("inDialog")) { 
                 //if (event.which == 13) { event.preventDefault(); }
                 //console.log("kb event, in dialog");
                 return;
@@ -531,7 +531,8 @@ var kiosk = (function() {
 
     kiosk.RootModel = Backbone.Model.extend({
         defaults: {
-            mode: "view"
+            mode: "view",
+            inDialog: false
         }
     });
 
@@ -856,7 +857,12 @@ var kiosk = (function() {
             if (e) { e.preventDefault(); }
             console.log("newPage");
             var model = new kiosk.ItemModel({type: "page"});
-            var popup = new kiosk.EditItemDialogView({model: model, action: "Add"});
+            var popup = new kiosk.EditItemDialogView({
+                model: model, action: "Add",
+                itemCollection: this.options.controller.models.itemCollection,
+                linkCollection: this.options.controller.models.linkCollection,
+                rootModel: this.options.controller.models.rootModel
+            });
             popup.render();
         },
 
@@ -864,7 +870,12 @@ var kiosk = (function() {
             if (e) { e.preventDefault(); }
             console.log("newItem");
             var model = new kiosk.ItemModel({type: "popup"});
-            var popup = new kiosk.EditItemDialogView({model: model, action: "Add"});
+            var popup = new kiosk.EditItemDialogView({
+                model: model, action: "Add",
+                itemCollection: this.options.controller.models.itemCollection,
+                linkCollection: this.options.controller.models.linkCollection,
+                rootModel: this.options.controller.models.rootModel
+            });
             popup.render();
         },
 
@@ -874,7 +885,8 @@ var kiosk = (function() {
             new kiosk.AddLinkDialogView({
                 model: new kiosk.Link(),
                 itemCollection: this.options.controller.models.itemCollection,
-                linkCollection: this.options.controller.models.linkCollection
+                linkCollection: this.options.controller.models.linkCollection,
+                rootModel: this.options.controller.models.rootModel
             }).render();
         }
     });
@@ -889,14 +901,15 @@ var kiosk = (function() {
         el: "#editItemDialog",
   
         events: {
-            "click .btn-primary": "doClick"
+            "click .btn-primary": "click"
         },
 
         initialize: function() {
-            _.bindAll(this, "doClick");
+            _.bindAll(this, "click");
         },
 
         render: function() {
+            var self = this;
             var template = _.template($('#editItemDialogTemplate').html(), {
                 model: this.model, 
                 action: this.options.action
@@ -904,10 +917,14 @@ var kiosk = (function() {
             this.popup = $("#editItemDialog");
             this.popup.html(template);
             this.popup.modal();
+            this.options.rootModel.set("inDialog", true);
             this.popup.modal("show"); 
+            this.popup.on("hidden", function() {
+                self.options.rootModel.set("inDialog", false);
+            });
         },
 
-        doClick: function() {
+        click: function() {
             console.log("click in edit page form, this:", this);
             var formData = this.$("form").serializeObject();
             console.log("form data", formData);
@@ -933,12 +950,16 @@ var kiosk = (function() {
         },
 
         render: function() {
+            var self = this;
             var template = _.template($("#addLinkDialogTemplate").html());
             this.popup = $("#addLinkDialog");
             this.popup.html(template({items: this.options.itemCollection.models}));
             this.popup.modal();
+            this.options.rootModel.set("inDialog", true);
             this.popup.modal("show");
-            console.log(this.popup);
+            this.popup.on("hidden", function() {
+                self.options.rootModel.set("inDialog", false);
+            });
         },
 
         click: function() {
