@@ -85,6 +85,8 @@ def kiosk_item(request, item_type=None, item_name=None):
             obj = get_object_or_404(KioskItem, name=item_name)
             r = obj.serialize()
 
+        return HttpResponse(json.dumps(r))
+
     if not request.user.is_staff:
         return HttpResponseForbidden("Permission denied.")
 
@@ -112,6 +114,13 @@ def kiosk_item(request, item_type=None, item_name=None):
 
         obj.save()
         r = obj.serialize()
+    elif request.method == "DELETE":
+        obj = get_object_or_404(KioskItem, type=item_type, name=item_name)
+
+        obj.delete()
+        r = ""
+    else:
+        raise Http404()
 
     return HttpResponse(json.dumps(r))
 
