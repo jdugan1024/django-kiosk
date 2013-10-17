@@ -433,7 +433,8 @@ var kiosk = (function() {
             self.in_dialog = false;
             self.mode = "view";
 
-            _.bindAll(this, "handleKeypress");
+            _.bindAll(this, "handleKeypress", "idle", "idle_countdown", "idle_reset",
+                            "idle_active", "start_idle_timer", "stop_idle_timer");
 
             $(document).keypress(kiosk.Controller.handleKeypress);
 
@@ -448,6 +449,7 @@ var kiosk = (function() {
              }
 
             Backbone.history.start();
+            kiosk.Controller.start_idle_timer();
         },
 
         handleKeypress: function (event) {
@@ -496,6 +498,49 @@ var kiosk = (function() {
             } else {
                 console.log("unknown keypress");
             }
+        },
+ 
+        idle: function() {
+            console.log("idle timeout")
+            this.idle_for = 0;
+            $.timer('idle_timer', kiosk.Controller.idle_countdown, 1, {
+                timeout: 11, 
+                finishCallback: kiosk.Controller.idle_reset
+            }).start();
+            $("#countdown").html(10);
+            $("#resetPopup").modal("show");
+        },
+
+        idle_countdown: function() {
+            $("#countdown").html(10 - this.idle_for);
+            this.idle_for++;
+        },
+
+        idle_reset: function() {
+            console.log("reset")
+            $("#resetPopup").modal("hide");
+            $("#popup").modal("hide");
+            if(this.models.pageModel.get("name") !== "index") {
+                this.router.navigate("index", {trigger: true});
+            }
+        },
+
+        idle_active: function() {
+            console.log("activate")
+            this.idle_for = 0;
+            $.timer('idle_timer', null);
+            $("#reset-message").dialog("close");
+        },
+
+        start_idle_timer: function() {
+            this.idle_for = 0;
+            $.idleTimer(30000);
+            $(document).bind("idle.idleTimer", kiosk.Controller.idle);
+            $(document).bind("active.idleTimer", kiosk.Controller.active);
+        },
+
+        stop_idle_timer: function() {
+            $.idleTimer('destroy');
         }
     }
 
