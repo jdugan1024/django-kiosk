@@ -239,7 +239,11 @@ img.floatRight { float: left; margin: 5px; }
     </form>
    </div>
    <div class="modal-footer">
-    <button class="btn" data-dismiss="modal">Close</button>
+    <% if (action === "Update") { %>
+    <button class="btn btn-danger pull-left">Delete</button>
+    <span class="pull-left text-warning">&nbsp;&nbsp;Delete this <%= model.get("type") %> and all references to it</span>
+    <% } %>
+    <button class="btn" data-dismiss="modal">Cancel</button>
     <button type="submit" class="btn btn-primary <%= action %>-btn"><%= action %></button>
    </div>
   </script>
@@ -268,7 +272,7 @@ img.floatRight { float: left; margin: 5px; }
       </form>
     </div>
     <div class="modal-footer">
-      <button class="btn" data-dismiss="modal">Close</button>
+      <button class="btn" data-dismiss="modal">Cancel</button>
       <button class="btn btn-primary"><%= action %></button>
     </div>
   </script>

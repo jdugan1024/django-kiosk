@@ -969,11 +969,12 @@ var kiosk = (function() {
         el: "#editItemDialog",
   
         events: {
-            "click .btn-primary": "click"
+            "click .btn-primary": "click",
+            "click .btn-danger": "delete"
         },
 
         initialize: function() {
-            _.bindAll(this, "click");
+            _.bindAll(this, "click", "delete");
         },
 
         render: function() {
@@ -1037,6 +1038,16 @@ var kiosk = (function() {
                     console.log("save failed", model, xhr);
                 }
             });
+        },
+
+        delete: function() {
+            console.log("delete! item!", this.model.get("id"), this.model);
+            this.options.itemCollection.remove(this.model);
+            this.options.linkCollection.remove(
+                this.options.linkCollection.where({link: this.model.get("id")}));
+            this.model.destroy();
+
+            this.popup.modal("hide");
         }
     });
 
