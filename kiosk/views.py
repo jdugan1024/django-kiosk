@@ -74,36 +74,6 @@ def loc_data(request, page_name, pk=None):
 
     return HttpResponse(r)
 
-def not_kiosk_item(request, item=None):
-    r = {}
-    if request.method == "GET":
-        obj = get_object_or_404(KioskItem, name=item)
-        return HttpResponse(serializers.serialize("json", [obj]).strip("[]"))
-    elif request.method == "POST":
-        print json.dumps(request.POST, indent=4)
-        for f in request.FILES:
-            print f
-
-        f = KioskItemForm(request.POST, request.FILES)
-        print "VALID?", f.is_valid()
-        if not f.is_valid():
-            print "ERR", f.errors
-            errdict = { 'status' : "Error",
-                       'errors' : [(k, v) for k, v in f.errors.items()] }
-            print errdict
-            return HttpResponse(json.dumps(errdict))
-
-        obj = f.save()
-        if obj.type == 'page':
-            link = "/" + obj.name
-        else:
-            link = "#" + obj.name
-        r['status'] = "OK"
-        r['link'] = link
-
-    return HttpResponse(json.dumps(dict(status="OK", link=link)))
-
-
 def kiosk_item(request, item_type=None, item_name=None):
     r = None
     if request.method == 'GET':
@@ -114,53 +84,51 @@ def kiosk_item(request, item_type=None, item_name=None):
         else:
             obj = get_object_or_404(KioskItem, name=item_name)
             r = obj.serialize()
-    elif request.method == "POST":
-        print json.dumps(request.POST, indent=4)
+
+    if not request.user.is_staff:
+        return HttpResponseForbidden("Permission denied.")
+
+    if request.method == "POST":
+        data = json.loads(request.body)
+        print "POST data", data
         for f in request.FILES:
             print f
 
-        f = KioskItemForm(request.POST, request.FILES)
-        print "VALID?", f.is_valid()
-        if not f.is_valid():
-            print "ERR", f.errors
-            errdict = { 'status' : "Error",
-                       'errors' : [(k, v) for k, v in f.errors.items()] }
-            print errdict
-            return HttpResponse(json.dumps(errdict))
-
-        obj = f.save()
+        obj = KioskItem(**data)
+        obj.save()
         r = obj.serialize()
-        r['status'] = "OK"
     elif request.method == "PUT":
         obj = get_object_or_404(KioskItem, type=item_type, name=item_name)
-        put_data = json.loads(request.raw_post_data)
-        f = KioskItemForm(put_data, request.FILES, instance=obj)
-        if not f.is_valid():
-            print "ERR", f.error
-            errdict = { 'status' : "Error",
-                       'errors' : [(k, v) for k, v in f.errors.items()] }
-            print errdict
-            return HttpResponse(json.dumps(errdict))
+        data = json.loads(request.body)
+        print "PUT data", data
 
-        obj = f.save()
+        del data['id']
+        for k, v in data.iteritems():
+            setattr(obj, k, v)
+
+        obj.save()
         r = obj.serialize()
-        r['status'] = "OK"
 
     return HttpResponse(json.dumps(r))
 
-def update_kiosk_item_images(request, item_type, item_name):
-    print item_type, item_name, request.method
+def kiosk_item_image(request, item_type, item_name):
     if request.method != 'POST':
         return Http404()
 
     if item_type not in ['page', 'popup']:
         return Http404()
 
+    if not request.user.is_staff:
+        return HttpResponseForbidden("Permission denied.")
+
     obj = get_object_or_404(KioskItem, type=item_type, name=item_name)
-    f = KioskItemForm(request.POST, request.FILES, instance=obj)
-    obj = f.save()
+
+    for k, v in request.FILES.items():
+        setattr(obj, k, v)
+
+    obj.save()
+
     print obj
     r = obj.serialize()
-    r['status'] = "OK"
 
     return HttpResponse(json.dumps(r))
