@@ -619,8 +619,6 @@ var kiosk = (function() {
             if(!attr.name || attr.name === "") {
                 err.name = "must not be empty";
             } else {
-                1+1;
-
             }
 
             if(!attr.title || attr.title === "") {
@@ -658,6 +656,7 @@ var kiosk = (function() {
 
     kiosk.ItemCollection = Backbone.Collection.extend({
         model: kiosk.ItemModel,
+        comparator: 'id',
         url: "/_kiosk_item"
     });
 
@@ -693,6 +692,7 @@ var kiosk = (function() {
 
     kiosk.LinkCollection = Backbone.Collection.extend({
         model: kiosk.Link,
+        comparator: 'id',
         url: function() {
             var url = window.location.origin + "/_loc/" + this.page;
             return url;
@@ -1015,6 +1015,7 @@ var kiosk = (function() {
             });
             this.model.save({}, {
                 success: function(model, response) {
+                    self.options.itemCollection.add(model);
                     console.log("model save successful, now to save images:", numFiles);
                     if(numFiles) {
                         model.uploadFiles(fileFormData);
@@ -1048,7 +1049,6 @@ var kiosk = (function() {
             var self = this;
             var template = _.template($("#LinkDialogTemplate").html());
             this.dialog = $("#LinkDialog");
-            console.log("myid", this.model.get("link"), this.model.attributes);
             this.dialog.html(template({
                 items: this.options.itemCollection.models,
                 action: this.options.action,
@@ -1066,18 +1066,20 @@ var kiosk = (function() {
         },
 
         click: function() {
+            var self = this;
             var link = this.$("select")[0].value;
             this.model.set("link", link);
             var parts = link.split("/");
-            console.log("before", this.model.get("type"), this.model.get("name"));
             this.model.set("type", parts[0]);
             this.model.set("name", parts[1]);
-            console.log("after", this.model.get("type"), this.model.get("name"));
-            console.log("in click/add", link, parts, this, this.model);
-            this.options.linkCollection.add(this.model);
-            console.log("after", this.model.get("type"), this.model.get("name"));
-            this.model.save();
-            console.log("after", this.model.get("type"), this.model.get("name"));
+            this.model.save({}, {
+                success: function(model, response) {
+                    self.options.linkCollection.add(model);
+                },
+                error: function(model, xhr) {
+                    console.log("error saving link", model, xhr);
+                }
+            });
 
             this.dialog.modal("hide");
         }
