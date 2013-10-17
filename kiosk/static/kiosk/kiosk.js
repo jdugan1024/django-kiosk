@@ -374,9 +374,29 @@ var kiosk = (function() {
       return o;
     };
 
+    // similar function to get values of file elements
+    $.fn.serializeFormFiles = function() {
+        var o = {};
+        $(this).find(":file").each(function(i,e) {
+            o[$(e).attr("name")] = $(e).val();
+        });
+        return o;
+    };
+
+    function readCookie(name) {
+        var nameEQ = name + "=";
+        var ca = document.cookie.split(';');
+        for(var i=0;i < ca.length;i++) {
+            var c = ca[i];
+            while (c.charAt(0)==' ') c = c.substring(1,c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+        }
+        return null;
+    }
+
     kiosk.Controller = {
         init: function(can_edit) {
-            self = this;
+            var self = this;
             console.log("can_edit", can_edit);
             this.can_edit = can_edit;
             this.dispatcher = _.clone(Backbone.Events);
@@ -413,18 +433,9 @@ var kiosk = (function() {
             self.in_dialog = false;
             self.mode = "view";
 
-            $(document).keypress(kiosk.Controller.handleKeypress);
+            _.bindAll(this, "handleKeypress");
 
-            function readCookie(name) {
-                var nameEQ = name + "=";
-                var ca = document.cookie.split(';');
-                for(var i=0;i < ca.length;i++) {
-                    var c = ca[i];
-                    while (c.charAt(0)==' ') c = c.substring(1,c.length);
-                    if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
-                }
-                return null;
-            }
+            $(document).keypress(kiosk.Controller.handleKeypress);
 
             var csrf = readCookie("csrftoken");
             if (csrf) {
@@ -440,21 +451,21 @@ var kiosk = (function() {
         },
 
         handleKeypress: function (event) {
-            console.log("keypress_this", self);
-            if(self.models.rootModel.get("inDialog")) { 
+            if(this.models.rootModel.get("inDialog")) { 
                 //if (event.which == 13) { event.preventDefault(); }
                 //console.log("kb event, in dialog");
                 return;
             }
+            console.log("keypress_this", this);
             console.log("keypress", event.which);
-            if(event.which == 101 && self.can_edit) { // e
-                console.log("root mode", self.models.rootModel.get("mode"));
-                if(self.models.rootModel.get("mode") == "edit") {
-                    self.models.rootModel.set("mode", "view");
+            if(event.which == 101 && this.can_edit) { // e
+                console.log("root mode", this.models.rootModel.get("mode"));
+                if(this.models.rootModel.get("mode") == "edit") {
+                    this.models.rootModel.set("mode", "view");
                 } else {
-                    self.models.rootModel.set("mode", "edit");
+                    this.models.rootModel.set("mode", "edit");
                 }
-                console.log(self.models.rootModel.get("mode") + " mode")
+                console.log(this.models.rootModel.get("mode") + " mode")
             } else if(event.which == 107) { // k
                 console.log("kiosk toggle");
                 if($("body").css("overflow") == 'hidden') {
@@ -462,24 +473,24 @@ var kiosk = (function() {
                 } else {
                     $("body").css("overflow", "hidden");
                 }
-            } else if(self.models.rootModel.get("mode") === "edit") {
+            } else if(this.models.rootModel.get("mode") === "edit") {
                 console.log("check edit keys");
                 switch (event.which) {
                     case 108: // l
                         event.preventDefault();
-                        self.dispatcher.trigger("new-link-key");
+                        this.dispatcher.trigger("new-link-key");
                         break;
                     case 110: // n
                         event.preventDefault();
-                        self.dispatcher.trigger("new-page-key");
+                        this.dispatcher.trigger("new-page-key");
                         break;
                     case 112: // p
                         event.preventDefault();
-                        self.dispatcher.trigger("new-popup-key");
+                        this.dispatcher.trigger("new-popup-key");
                         break;
                     case 116: // t
                         event.preventDefault();
-                        self.dispatcher.trigger("edit-this-page-key");
+                        this.dispatcher.trigger("edit-this-page-key");
                         break;
                 }
             } else {
@@ -563,7 +574,8 @@ var kiosk = (function() {
     // Note: files don't play nicely with PUT
 
     kiosk.ItemModel = Backbone.Model.extend({
-        urlRoot: "/_kiosk_item",
+        urlRoot: "/_kiosk_item/",
+        imageUrlRoot: "/_kiosk_item_image/",
 
         defaults: {
             "name": undefined,
@@ -580,32 +592,61 @@ var kiosk = (function() {
             "popup_image2": undefined
         },
 
-        uploadFile: function(name, csrf_token, data) {
+        //
+        // uploadFile
+        //
+        // workaround for lack of support for files in backbone.js, we POST to a separate resource
+        uploadFiles: function(data) {
             //var data = new FormData($("#addNewPopup form")[0]);
-            self = this;
+            var self = this;
+            data.append('csrfmiddlewaretoken', readCookie("csrftoken"));
             $.ajax({
-                url: this.urlRoot + "/" + name,
+                url: this.imageUrlRoot + this.get("type") + "/" + this.get("name"),
                 type: 'POST',
                 data: data,
                 processData: false,
                 contentType: false,
                 success: function(response) {
                     var data = $.parseJSON(response);
-                    console.log("data:", data);
-                    if (data.status == "OK") {
-                      //$("#messages").html('<div class="alert alert-success">Popup added.</div>');
-                      //window.setTimeout(function() { $("#messages .alert").alert('close').removeClass("alert-success"); }, 2000);
-                      //link_div(data.link);
-                      //edit_mode();
-                      //load_links();
-                      data['csrfmiddlewaretoken'] = csrf_token;
-                      self.set(data);
-                      self.save();
-                    } else {
-                      console.log("popup err: ", data.errors);
-                    }
+                    console.log("image success:", data);
                 }
             });
+        },
+
+        validate: function(attr, options) {
+            console.log("validate", this, attr);
+            err = {}
+            if(!attr.name || attr.name === "") {
+                err.name = "must not be empty";
+            } else {
+                1+1;
+
+            }
+
+            if(!attr.title || attr.title === "") {
+                err.title = "must not be empty";
+            }
+
+            if(!attr.type) {
+                err.type = "type must be set";
+            } else if(attr.type === "page") {
+                if(this.isNew() && !attr.page_image) {
+                    err.page_image = "must specify a page image";
+                }
+            } else if(attr.type == "popup") {
+                if(this.isNew() && !attr.popup_image1) {
+                    err.popup_image1 = "must specify at least one popup image";
+                }
+                if(!attr.text) {
+                    err.text = "must specify some text";
+                }
+            } else {
+                err.type = "unknown type: " + attr.type;
+            }
+
+            if (!$.isEmptyObject(err)) {
+                return err
+            }
         }
     }),
 
@@ -774,6 +815,7 @@ var kiosk = (function() {
 
         click: function(e) {
             if (this.options.rootModel.get("mode") === "edit") {
+                if (!e.shiftKey) { return; }
                 new kiosk.LinkDialogView({
                     model: this.model,
                     itemCollection: this.options.controller.models.itemCollection,
@@ -848,8 +890,6 @@ var kiosk = (function() {
         initialize: function() {
             _.bindAll(this, "newPopup", "newPage", "newLink");
 
-            this.editItemDialogView = new kiosk.EditItemDialogView();
-
             this.listenTo(this.options.controller.dispatcher, "new-page-key", this.newPage);
             this.listenTo(this.options.controller.dispatcher, "new-popup-key", this.newPopup);
             this.listenTo(this.options.controller.dispatcher, "new-link-key", this.newLink);
@@ -873,7 +913,8 @@ var kiosk = (function() {
             console.log("newPage");
             var model = new kiosk.ItemModel({type: "page"});
             var popup = new kiosk.EditItemDialogView({
-                model: model, action: "Add",
+                model: model, 
+                action: "Add",
                 itemCollection: this.options.controller.models.itemCollection,
                 linkCollection: this.options.controller.models.linkCollection,
                 rootModel: this.options.controller.models.rootModel
@@ -886,7 +927,8 @@ var kiosk = (function() {
             console.log("newItem");
             var model = new kiosk.ItemModel({type: "popup"});
             var popup = new kiosk.EditItemDialogView({
-                model: model, action: "Add",
+                model: model, 
+                action: "Add",
                 itemCollection: this.options.controller.models.itemCollection,
                 linkCollection: this.options.controller.models.linkCollection,
                 rootModel: this.options.controller.models.rootModel
@@ -926,6 +968,7 @@ var kiosk = (function() {
 
         render: function() {
             var self = this;
+            console.log("render item edit", this);
             var template = _.template($('#editItemDialogTemplate').html(), {
                 model: this.model, 
                 action: this.options.action
@@ -937,16 +980,52 @@ var kiosk = (function() {
             this.popup.modal("show"); 
             this.popup.on("hidden", function() {
                 self.options.rootModel.set("inDialog", false);
+                self.undelegateEvents();
             });
         },
 
         click: function() {
+            var self = this;
             console.log("click in edit page form, this:", this);
             var formData = this.$("form").serializeObject();
+            var fileData = this.$("form").serializeFormFiles();
+            formData = _.extend(formData, fileData);
+
             console.log("form data", formData);
-            console.log("file: ", $("#newPageFile").val());
-            var data = new FormData(this.$("form")[0]);
-            this.model.uploadFile(formData['name'], formData['csrfmiddlewaretoken'], data);
+
+            var fileFormData = new FormData();
+            var numFiles = 0;
+            _.each(fileData, function(v, k) {
+                if (v) {
+                    console.log("file to upload", k, this.$("form [name=" + k + "]")[0].files[0]);
+                    fileFormData.append(k, this.$("form [name=" + k + "]")[0].files[0]);
+                    numFiles += 1;
+                }
+            });
+
+            this.model.set(formData);
+            this.model.on("invalid", function(model, errors) {
+                console.log("ERROR", model, errors);
+                self.$("form .text-error").remove();
+                _.each(errors, function(v, k) {
+                    console.log("err", k, v);
+                    self.$("form [name="+k+"]").prev().append(" <span class='text-error'>"+v+"</div>");
+                });
+                self.model.off("invalid");
+            });
+            this.model.save({}, {
+                success: function(model, response) {
+                    console.log("model save successful, now to save images:", numFiles);
+                    if(numFiles) {
+                        model.uploadFiles(fileFormData);
+                        self.popup
+                    }
+                    self.popup.modal("hide");
+                },
+                error: function(model, xhr) {
+                    console.log("save failed", model, xhr);
+                }
+            });
         }
     });
 
@@ -980,6 +1059,9 @@ var kiosk = (function() {
             this.dialog.modal("show");
             this.dialog.on("hidden", function() {
                 self.options.rootModel.set("inDialog", false);
+                // XXX: without this there were zombies attached to the submit button
+                // XXX: is this the last of the references to this view or are we leaking memory?
+                self.undelegateEvents();
             });
         },
 
@@ -998,9 +1080,6 @@ var kiosk = (function() {
             console.log("after", this.model.get("type"), this.model.get("name"));
 
             this.dialog.modal("hide");
-            // XXX: without this there were zombies attached to the submit button
-            // XXX: is this the last of the references to this view or are we leaking memory?
-            this.undelegateEvents();
         }
     });
 })(window.kiosk = window.kiosk || {}, Backbone, jQuery, _);
