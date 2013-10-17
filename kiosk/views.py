@@ -103,6 +103,10 @@ def kiosk_item(request, item_type=None, item_name=None):
         print "PUT data", data
 
         del data['id']
+        del data['page_image']
+        del data['popup_image1']
+        del data['popup_image2']
+
         for k, v in data.iteritems():
             setattr(obj, k, v)
 

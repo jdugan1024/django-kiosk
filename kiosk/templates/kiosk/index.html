@@ -65,6 +65,17 @@ h1 { font-size: 25px; line-height: 30px; }
   margin-left: -400px;
 }
 
+.item-popup {
+  width: 900px;
+  margin-left: -450px;
+}
+
+.item-textarea {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  width: 100%;
+}
 
 .linkItem {
     position: absolute;
@@ -188,7 +199,7 @@ img.floatRight { float: left; margin: 5px; }
    </div>
   </div>
 
-  <div id="editItemDialog" class="modal hide" tabindex="-1" role="dialog"></div>
+  <div id="editItemDialog" class="modal hide item-popup" tabindex="-1" role="dialog"></div>
   
   <script type="text/template" id="editItemDialogTemplate">
     <div class="modal-header">
@@ -199,10 +210,10 @@ img.floatRight { float: left; margin: 5px; }
     <form>
       <fieldset>
         <label>Name</label>
-        <input name="name" type="text" placeholder="Name of <%= model.get("type") %>">
+        <input name="name" type="text" placeholder="Name of <%= model.get("type") %>" value="<%= model.get("name") %>">
         <span class="help-block">Name of <%= model.get("type") %>, this will appear in the URL.</span>
         <label>Title</label>
-        <input name="title" type="text" placeholder="Title of <%= model.get("type") %>">
+        <input name="title" type="text" placeholder="Title of <%= model.get("type") %>" value="<%= model.get("title") %>">
         <span class="help-block">Title of <%= model.get("type") %>, this is a descriptive summary of the <%= model.get("type") %>.</span>
 
         <% if(model.get("type") === "popup") { %>
@@ -213,10 +224,10 @@ img.floatRight { float: left; margin: 5px; }
         <input name="popup_image2" id="newPopupFile2" type="file" class="filestyle">
         <span class="help-block">Second image file for this popup.</span>
         <label>URL</label>
-        <input name="url" type="text" placeholder="URL">
+        <input name="url" type="text" placeholder="URL" value="<%= model.get("url") %>">
         <span class="help-block">URL for further information, will be displayed as a QR code.</span>
         <label>Text</label>
-        <textarea name="text" rows="5" placeholder="HTML Here"></textarea>
+        <textarea name="text" rows="5" class="item-textarea" placeholder="HTML Here"><%= model.get("text") %></textarea>
         <span class="help-block">Text content for this popup.
         <% } else { %>
         <label>Page Image</label>

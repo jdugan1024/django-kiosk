@@ -846,7 +846,17 @@ var kiosk = (function() {
         edit: function(e) {
             // the parent div also has a handler but for other events
             e.stopPropagation();
-            console.log("LinkItem edit click", e);
+            console.log("LinkItem edit click", e, this.model, this.options.itemCollection);
+            var model = this.options.itemCollection.get(this.model.get("link"));
+            console.log("MModel", model);
+            var dialog = new kiosk.EditItemDialogView({
+                model: model,
+                action: "Update",
+                itemCollection: this.options.controller.models.itemCollection,
+                linkCollection: this.options.controller.models.linkCollection,
+                rootModel: this.options.controller.models.rootModel
+            });
+            dialog.render();
         },
 
         delete: function(e) {
