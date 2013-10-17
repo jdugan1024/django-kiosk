@@ -284,7 +284,8 @@
         // uploadFile
         //
         // workaround for lack of support for files in backbone.js, we POST to a separate resource
-        uploadFiles: function(data) {
+        //
+        uploadFiles: function(data, callback) {
             //var data = new FormData($("#addNewPopup form")[0]);
             var self = this;
             data.append('csrfmiddlewaretoken', readCookie("csrftoken"));
@@ -296,7 +297,10 @@
                 contentType: false,
                 success: function(response) {
                     var data = $.parseJSON(response);
-                    console.log("image success:", data);
+                    console.log("image success:", response);
+                    if(callback) {
+                        callback(response);
+                    }
                 }
             });
         },
@@ -714,11 +718,13 @@
             });
             this.model.save({}, {
                 success: function(model, response) {
-                    self.options.itemCollection.add(model);
                     console.log("model save successful, now to save images:", numFiles);
                     if(numFiles) {
-                        model.uploadFiles(fileFormData);
-                        self.popup
+                        model.uploadFiles(fileFormData, function (response) {
+                            console.log("total success", response, model);
+                            // ugh, can't seem to get this to work without going to get them all
+                            self.options.itemCollection.fetch();
+                        });
                     }
                     self.popup.modal("hide");
                 },
