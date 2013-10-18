@@ -1,5 +1,4 @@
 (function(kiosk, Backbone, $, _) {
-
     // borrowed from: https://github.com/thomasdavis/backbonetutorials/tree/gh-pages/videos/beginner#jquery-serializeobject 
     $.fn.serializeObject = function() {
       var o = {};
@@ -310,8 +309,9 @@
             err = {}
             if(!attr.name || attr.name === "") {
                 err.name = "must not be empty";
-            } else {
             }
+            // we also validate the the name is unique in the view where we have
+            // access to the collection
 
             if(!attr.title || attr.title === "") {
                 err.title = "must not be empty";
@@ -666,7 +666,7 @@
         },
 
         initialize: function() {
-            _.bindAll(this, "click", "delete");
+            _.bindAll(this, "click", "delete", "_set_form_error");
         },
 
         render: function() {
@@ -707,12 +707,22 @@
             });
 
             this.model.set(formData);
+
+            var dups = this.options.itemCollection.where({
+                name: this.model.get("name"),
+                type: this.model.get("type")
+            });
+            if (dups.length) {
+                this._set_form_error("name", "that name is already in use");
+                return false;
+            }
+
             this.model.on("invalid", function(model, errors) {
                 console.log("ERROR", model, errors);
                 self.$("form .text-error").remove();
-                _.each(errors, function(v, k) {
-                    console.log("err", k, v);
-                    self.$("form [name="+k+"]").prev().append(" <span class='text-error'>"+v+"</div>");
+                _.each(errors, function(msg, field) {
+                    console.log("err", field, msg);
+                    self._set_form_error(field, msg);
                 });
                 self.model.off("invalid");
             });
@@ -732,6 +742,11 @@
                     console.log("save failed", model, xhr);
                 }
             });
+        },
+
+        _set_form_error: function(field, msg) {
+            var control = this.$("form [name="+ field +"]");
+            control.prev().append(" <span class='text-error'>"+ msg +"</div>");
         },
 
         delete: function() {
