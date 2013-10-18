@@ -1,6 +1,6 @@
 import StringIO
 
-from django.http import Http404, HttpResponseRedirect, HttpResponse, HttpResponseForbidden
+from django.http import Http404, HttpResponseRedirect, HttpResponse, HttpResponseForbidden, HttpResponseBadRequest
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.views.decorators.csrf import csrf_exempt
@@ -93,8 +93,9 @@ def kiosk_item(request, item_type=None, item_name=None):
     if request.method == "POST":
         data = json.loads(request.body)
         print "POST data", data
-        for f in request.FILES:
-            print f
+
+        if KioskItem.objects.filter(name=data['name'], type=data['type']).count() > 0:
+            return HttpResponseBadRequest("Duplicate item")
 
         obj = KioskItem(**data)
         obj.save()
