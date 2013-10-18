@@ -362,7 +362,7 @@
     kiosk.ItemCollection = Backbone.Collection.extend({
         model: kiosk.ItemModel,
         comparator: 'id',
-        url: "_kiosk_item"
+        url: "_kiosk_item/"
     });
 
     //
@@ -399,7 +399,8 @@
         model: kiosk.Link,
         comparator: 'id',
         url: function() {
-            var url = window.location.origin + "_loc/" + this.page;
+            var url = "_loc/" + this.page;
+            console.log("linkcollection url:", url);
             return url;
         }
     }),
