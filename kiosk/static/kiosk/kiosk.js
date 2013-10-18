@@ -150,7 +150,7 @@
             console.log("idle timeout")
             $("#countdown").html(this.idle_message_timeout);
             this.idle_for = 1;
-            $.timer('idle_timer', kiosk.Controller.idle_countdown, 1, {
+            $.timer('idle_message_timer', kiosk.Controller.idle_countdown, 1, {
                 timeout: this.idle_message_timeout, 
                 finishCallback: kiosk.Controller.idle_reset
             }).start();
@@ -173,7 +173,7 @@
 
         idle_active: function() {
             console.log("activate")
-            $.timer('idle_timer', null);
+            $.timer('idle_message_timer', null);
             $("#resetPopup").modal("hide");
         },
 
@@ -186,6 +186,7 @@
 
         stop_idle_timer: function() {
             $.idleTimer('destroy');
+            $.timer('idle_message_timer', null);
         }
     }
 
