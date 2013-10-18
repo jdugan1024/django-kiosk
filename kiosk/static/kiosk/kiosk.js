@@ -43,8 +43,8 @@
             this.can_edit = can_edit;
             this.dispatcher = _.clone(Backbone.Events);
 
-            this.idle_timeout = 30; // seconds
-            this.idle_message_timeout = 10; // seconds
+            this.idleTimeout = 30; // seconds
+            this.idleMessageTimeout = 10; // seconds
 
             console.log("models");
             this.models = {
@@ -71,6 +71,7 @@
             this.router = new kiosk.Router({"controller": this});
 
             this.models.rootModel.on("change:mode", this.views.editView.render, this.views.editView);
+            this.models.rootModel.on("change:mode", this.toggleIdleTimer, this);
             this.models.pageModel.bind('sync', this.views.pageView.render, this.views.pageView);
             this.models.linkCollection.bind('sync', this.views.linksView.render, this.views.linksView);
             this.models.linkCollection.bind('remove', this.views.linksView.render, this.views.linksView);
@@ -79,8 +80,8 @@
             self.in_dialog = false;
             self.mode = "view";
 
-            _.bindAll(this, "handleKeypress", "idle", "idle_countdown", "idle_reset",
-                            "idle_active", "start_idle_timer", "stop_idle_timer");
+            _.bindAll(this, "handleKeypress", "idle", "idleCountdown", "idleReset",
+                            "idleActive", "startIdleTimer", "stopIdleTimer");
 
             $(document).keypress(kiosk.Controller.handleKeypress);
 
@@ -95,7 +96,7 @@
              }
 
             Backbone.history.start();
-            kiosk.Controller.start_idle_timer();
+            kiosk.Controller.startIdleTimer();
         },
 
         handleKeypress: function (event) {
@@ -148,21 +149,21 @@
  
         idle: function() {
             console.log("idle timeout")
-            $("#countdown").html(this.idle_message_timeout);
-            this.idle_for = 1;
-            $.timer('idle_message_timer', kiosk.Controller.idle_countdown, 1, {
-                timeout: this.idle_message_timeout, 
-                finishCallback: kiosk.Controller.idle_reset
+            $("#countdown").html(this.idleMessageTimeout);
+            this.idleFor = 1;
+            $.timer('idle_message_timer', kiosk.Controller.idleCountdown, 1, {
+                timeout: this.idleMessageTimeout, 
+                finishCallback: kiosk.Controller.idleReset
             }).start();
             $("#resetPopup").modal("show");
         },
 
-        idle_countdown: function() {
-            $("#countdown").html(this.idle_message_timeout - this.idle_for);
-            this.idle_for++;
+        idleCountdown: function() {
+            $("#countdown").html(this.idleMessageTimeout - this.idleFor);
+            this.idleFor++;
         },
 
-        idle_reset: function() {
+        idleReset: function() {
             console.log("reset")
             $("#resetPopup").modal("hide");
             $("#popup").modal("hide");
@@ -171,22 +172,30 @@
             }
         },
 
-        idle_active: function() {
+        idleActive: function() {
             console.log("activate")
             $.timer('idle_message_timer', null);
             $("#resetPopup").modal("hide");
         },
 
-        start_idle_timer: function() {
+        startIdleTimer: function() {
             this.idle_for = 0;
-            $.idleTimer(this.idle_timeout * 1000);
+            $.idleTimer(this.idleTimeout * 1000);
             $(document).bind("idle.idleTimer", kiosk.Controller.idle);
-            $(document).bind("active.idleTimer", kiosk.Controller.idle_active);
+            $(document).bind("active.idleTimer", kiosk.Controller.idleActive);
         },
 
-        stop_idle_timer: function() {
+        stopIdleTimer: function() {
             $.idleTimer('destroy');
             $.timer('idle_message_timer', null);
+        },
+
+        toggleIdleTimer: function() {
+            if(this.models.rootModel.get("mode") === "edit") {
+                this.stopIdleTimer();
+            } else {
+                this.startIdleTimer();
+            }
         }
     }
 
@@ -607,10 +616,8 @@
 
             if(mode === "edit") {
                 this.$el.show();
-                //stop_idle_timer();
             } else {
                 this.$el.hide();
-                //start_idle_timer();
             }
         },
 
