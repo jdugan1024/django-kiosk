@@ -42,6 +42,10 @@
             console.log("can_edit", can_edit);
             this.can_edit = can_edit;
             this.dispatcher = _.clone(Backbone.Events);
+
+            this.idle_timeout = 30; // seconds
+            this.idle_message_timeout = 10; // seconds
+
             console.log("models");
             this.models = {
                 "rootModel": new kiosk.RootModel(),
@@ -144,17 +148,17 @@
  
         idle: function() {
             console.log("idle timeout")
-            this.idle_for = 0;
+            $("#countdown").html(this.idle_message_timeout);
+            this.idle_for = 1;
             $.timer('idle_timer', kiosk.Controller.idle_countdown, 1, {
-                timeout: 11, 
+                timeout: this.idle_message_timeout, 
                 finishCallback: kiosk.Controller.idle_reset
             }).start();
-            $("#countdown").html(10);
             $("#resetPopup").modal("show");
         },
 
         idle_countdown: function() {
-            $("#countdown").html(10 - this.idle_for);
+            $("#countdown").html(this.idle_message_timeout - this.idle_for);
             this.idle_for++;
         },
 
@@ -169,16 +173,15 @@
 
         idle_active: function() {
             console.log("activate")
-            this.idle_for = 0;
             $.timer('idle_timer', null);
-            $("#reset-message").dialog("close");
+            $("#resetPopup").modal("hide");
         },
 
         start_idle_timer: function() {
             this.idle_for = 0;
-            $.idleTimer(30000);
+            $.idleTimer(this.idle_timeout * 1000);
             $(document).bind("idle.idleTimer", kiosk.Controller.idle);
-            $(document).bind("active.idleTimer", kiosk.Controller.active);
+            $(document).bind("active.idleTimer", kiosk.Controller.idle_active);
         },
 
         stop_idle_timer: function() {
