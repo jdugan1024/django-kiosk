@@ -274,8 +274,8 @@
     // Note: files don't play nicely with PUT
 
     kiosk.ItemModel = Backbone.Model.extend({
-        urlRoot: "/_kiosk_item/",
-        imageUrlRoot: "/_kiosk_item_image/",
+        urlRoot: "_kiosk_item/",
+        imageUrlRoot: "_kiosk_item_image/",
 
         defaults: {
             "name": undefined,
@@ -362,7 +362,7 @@
     kiosk.ItemCollection = Backbone.Collection.extend({
         model: kiosk.ItemModel,
         comparator: 'id',
-        url: "/_kiosk_item"
+        url: "_kiosk_item"
     });
 
     //
@@ -382,9 +382,9 @@
         url: function() {
             console.log("Link url", this)
             if (this.isNew()) {
-                return "/_loc/" + this.get("page");
+                return "_loc/" + this.get("page");
             } else {
-                return "/_loc/" + this.get("id");
+                return "_loc/" + this.get("id");
             }
         }
     }),
@@ -399,7 +399,7 @@
         model: kiosk.Link,
         comparator: 'id',
         url: function() {
-            var url = window.location.origin + "/_loc/" + this.page;
+            var url = window.location.origin + "_loc/" + this.page;
             return url;
         }
     }),
