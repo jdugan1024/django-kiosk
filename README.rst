@@ -1,4 +1,4 @@
-django-kiosk
+scinet-kiosk
 ============
 
 This Django app can be used to develop simple interactive kiosks using a
@@ -18,7 +18,7 @@ need to tweak a few things. Here's an example of setting LANG::
 To get started with this project you can do the following::
 
     $ ./mkdevenv
-    $ source django-kiosk.env
+    $ source scinet-kiosk.env
     $ python kiosk_example/manage.py syncdb
     $ python kiosk_example/manage.py runserver
 
