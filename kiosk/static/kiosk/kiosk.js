@@ -37,10 +37,10 @@
     }
 
     kiosk.Controller = {
-        init: function(can_edit) {
+        init: function(canEdit) {
             var self = this;
-            console.log("can_edit", can_edit);
-            this.can_edit = can_edit;
+            console.log("canEdit", canEdit);
+            this.canEdit = canEdit;
             this.dispatcher = _.clone(Backbone.Events);
 
             this.idleTimeout = 30; // seconds
@@ -107,7 +107,7 @@
             }
             console.log("keypress_this", this);
             console.log("keypress", event.which);
-            if(event.which == 101 && this.can_edit) { // e
+            if(event.which == 101 && this.canEdit) { // e
                 console.log("root mode", this.models.rootModel.get("mode"));
                 if(this.models.rootModel.get("mode") == "edit") {
                     this.models.rootModel.set("mode", "view");
