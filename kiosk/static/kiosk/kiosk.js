@@ -229,7 +229,8 @@
             this.controller.models.linkCollection.page = page;
             this.controller.models.linkCollection.loaded = false;
             this.controller.models.linkCollection.fetch({
-              success: function(links) { links.loaded = true; }
+                reset: true,
+                success: function(links) { links.loaded = true; }
             });
             console.log("show page done");
         }
