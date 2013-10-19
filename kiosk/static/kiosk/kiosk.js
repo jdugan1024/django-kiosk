@@ -278,6 +278,16 @@
         urlRoot: "_kiosk_item/",
         imageUrlRoot: "_kiosk_item_image/",
 
+        //
+        // we don't want to encode our id since we're intentionally gaming it with a /
+        // (that's the only difference between this url function and backbone's default)
+        //
+        url: function() {
+            var base = _.result(this, 'urlRoot') || _.result(this.collection, 'url') || urlError();
+            if (this.isNew()) return base;
+            return base + (base.charAt(base.length - 1) === '/' ? '' : '/') + this.id;
+        },
+
         defaults: {
             "name": undefined,
             "title": undefined,
