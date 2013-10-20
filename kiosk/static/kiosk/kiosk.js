@@ -324,6 +324,7 @@
                     if(callback) {
                         callback(response);
                     }
+                    self.trigger("imageUpdated");
                 }
             });
         },
@@ -593,6 +594,17 @@
     kiosk.PageView = Backbone.View.extend({
         el: "#Page",
 
+        initialize: function() {
+            this.listenTo(this.model, "imageUpdated", this.backgroundChange);
+        },
+
+        backgroundChange: function() {
+            // we need to bust the cache
+            console.log("background change", this.model.get("page_image"));
+            var url = this.model.get("page_image") + "?v=" + new Date().getTime();
+            this.$el.css("background-image", "url(" + url + ")");
+        },
+
         render: function () {
             console.log("render PageView", this, this.model.loaded);
             if (this.model.get("name")) {
@@ -620,6 +632,7 @@
             this.listenTo(this.options.controller.dispatcher, "new-page-key", this.newPage);
             this.listenTo(this.options.controller.dispatcher, "new-popup-key", this.newPopup);
             this.listenTo(this.options.controller.dispatcher, "new-link-key", this.newLink);
+            this.listenTo(this.options.controller.dispatcher, "edit-this-page-key", this.editThisPage);
         },
 
         render: function () {
@@ -671,6 +684,19 @@
                 rootModel: this.options.controller.models.rootModel,
                 action: "Add"
             }).render();
+        },
+
+        editThisPage: function(e) {
+            if(e) { e.preventDefault(); }
+            console.log("edit this page", this);
+            var popup = new kiosk.EditItemDialogView({
+                model: this.options.controller.models.pageModel,
+                action: "Update",
+                itemCollection: this.options.controller.models.itemCollection,
+                linkCollection: this.options.controller.models.linkCollection,
+                rootModel: this.options.controller.models.rootModel
+            });
+            popup.render();
         }
     });
 
@@ -729,16 +755,18 @@
                 }
             });
 
-            this.model.set(formData);
-
-            var dups = this.options.itemCollection.where({
-                name: this.model.get("name"),
-                type: this.model.get("type")
-            });
-            if (dups.length) {
-                this._set_form_error("name", "that name is already in use");
-                return false;
+            if (this.model.isNew() || this.model.get("name") !== formData.name) {
+                var dups = this.options.itemCollection.where({
+                    name: formData.name,
+                    type: formData.type
+                });
+                if (dups.length) {
+                    this._set_form_error("name", "that name is already in use");
+                    return false;
+                }
             }
+
+            this.model.set(formData);
 
             this.model.on("invalid", function(model, errors) {
                 console.log("ERROR", model, errors);
@@ -749,6 +777,7 @@
                 });
                 self.model.off("invalid");
             });
+
             this.model.save({}, {
                 success: function(model, response) {
                     console.log("model save successful, now to save images:", numFiles);
