@@ -62,6 +62,7 @@
 
             console.log("view");
             this.views = {
+                "bodyView": new kiosk.BodyView({model: this.models.rootModel, "controller": this}),
                 "pageView": new kiosk.PageView({model: this.models.pageModel, "controller": this}),
                 "linksView": new kiosk.LinkCollectionDisplayView({collection: this.models.linkCollection, "controller": this}),
                 "editView": new kiosk.EditView({"controller": this})
@@ -76,6 +77,12 @@
             this.models.linkCollection.bind('sync', this.views.linksView.render, this.views.linksView);
             this.models.linkCollection.bind('remove', this.views.linksView.render, this.views.linksView);
             this.models.linkCollection.bind('add', this.views.linksView.render, this.views.linksView);
+
+            //
+            // setup page resizing
+            //
+            $(window).bind("resize.app", _.bind(this.views.bodyView.render, this.views.bodyView));
+            this.views.bodyView.render();
 
             self.in_dialog = false;
             self.mode = "view";
@@ -583,6 +590,20 @@
             this.options.linkCollection.remove(this.model);
             this.model.destroy();
         }
+    }),
+
+    kiosk.BodyView = Backbone.View.extend({
+      el: "#Body",
+
+      render: function() {
+        if ($(window).height() < 1070 || $(window).width() < 1910) {
+          // show scrollbars if the window size is clearly less than 1080p
+          // (1920x1080)
+          this.$el.css("overflow", "visible");
+        } else {
+          this.$el.css("overflow", "hidden");
+        }
+      }
     }),
 
     //
