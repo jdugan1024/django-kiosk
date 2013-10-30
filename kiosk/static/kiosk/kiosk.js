@@ -644,7 +644,8 @@
         events: {
           "click #newPopupButton": "newPopup",
           "click #newPageButton": "newPage",
-          "click #newLinkButton": "newLink"
+          "click #newLinkButton": "newLink",
+          "click #editThisPageButton": "editThisPage"
         },
 
         initialize: function() {
