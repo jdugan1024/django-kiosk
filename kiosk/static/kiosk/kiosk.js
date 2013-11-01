@@ -310,6 +310,15 @@
             "popup_image2": undefined
         },
 
+        formFilenameValue: function(name) {
+            if(this.get(name)) {
+                var parts = this.get(name).split("/");
+                return 'value="' + parts[parts.length - 1] + '"';
+            } else {
+                return;
+            }
+        },
+
         //
         // uploadFile
         //
@@ -749,6 +758,16 @@
             });
             this.popup = $("#editItemDialog");
             this.popup.html(template);
+            this.popup.find(".image-file-button").each(function() {
+                $(this).off('click').on('click', function() {
+                    $(this).siblings('.image-file').trigger('click');
+                });
+            });
+            this.popup.find(".image-file").each(function() {
+                $(this).change(function () {
+                    $(this).siblings('.image-file-chosen').val(this.files[0].name);
+                });
+            });
             this.popup.modal();
             this.options.rootModel.set("inDialog", true);
             this.popup.modal("show"); 

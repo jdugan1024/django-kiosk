@@ -120,7 +120,7 @@ img.floatRight { float: left; margin: 5px; }
 .validate_tips { border: 1px solid transparent; padding: 0.3em; }
 #dialog-form { display: none; }
 #reset-message { display: none; }
-.modal {
+.modal-overflow {
   max-height: 75%;
   overflow-y: auto;
 }
@@ -204,7 +204,7 @@ img.floatRight { float: left; margin: 5px; }
    </div>
   </div>
 
-  <div id="editItemDialog" class="modal hide item-popup" tabindex="-1" role="dialog"></div>
+  <div id="editItemDialog" class="modal modal-overflow hide item-popup" tabindex="-1" role="dialog"></div>
   
   <script type="text/template" id="editItemDialogTemplate">
     <div class="modal-header">
@@ -215,28 +215,40 @@ img.floatRight { float: left; margin: 5px; }
     <form>
       <fieldset>
         <label>Name</label>
-        <input name="name" type="text" placeholder="Name of <%= model.get("type") %>" value="<%= model.get("name") %>">
+        <input name="name" class="input-xxlarge" type="text" placeholder="Name of <%= model.get("type") %>" value="<%= model.get("name") %>">
         <span class="help-block">Name of <%= model.get("type") %>, this will appear in the URL.</span>
         <label>Title</label>
-        <input name="title" type="text" placeholder="Title of <%= model.get("type") %>" value="<%= model.get("title") %>">
+        <input name="title" class="input-xxlarge" type="text" placeholder="Title of <%= model.get("type") %>" value="<%= model.get("title") %>">
         <span class="help-block">Title of <%= model.get("type") %>, this is a descriptive summary of the <%= model.get("type") %>.</span>
 
         <% if(model.get("type") === "popup") { %>
         <label>Image 1</label>
-        <input name="popup_image1" id="newPopupFile1" type="file" class="filestyle">
+        <div class="input-append">
+          <input name="popup_image1" type="file" class="hide image-file">
+          <input class="input-xxlarge image-file-chosen" type="text" <%= model.formFilenameValue('popup_image1') %>>
+          <a class="btn image-file-button">Select</a>
+        </div>
         <span class="help-block">First image file for this popup.</span>
         <label>Image 2</label>
-        <input name="popup_image2" id="newPopupFile2" type="file" class="filestyle">
+        <div class="input-append">
+          <input name="popup_image2" type="file" class="hide image-file" onchange="console.log('changeditup!)'">
+          <input class="input-xxlarge image-file-chosen" type="text" <%= model.formFilenameValue('popup_image2') %>>
+          <a class="btn image-file-button">Select</a>
+        </div>
         <span class="help-block">Second image file for this popup.</span>
         <label>URL</label>
-        <input name="url" type="text" placeholder="URL" value="<%= model.get("url") %>">
+        <input name="url" class="input-xxlarge" type="text" placeholder="URL" value="<%= model.get("url") %>">
         <span class="help-block">URL for further information, will be displayed as a QR code.</span>
         <label>Text</label>
         <textarea name="text" rows="5" class="item-textarea" placeholder="HTML Here"><%= model.get("text") %></textarea>
         <span class="help-block">Text content for this popup.
         <% } else { %>
         <label>Page Image</label>
-        <input name="page_image" type="file" class="filestyle">
+        <div class="input-append">
+          <input name="page_image" type="file" class="image-file hide">
+          <input class="input-large image-file-chosen" type="text" <%= model.formFilenameValue('page_image') %>>
+          <a class="btn image-file-button">Select</a>
+        </div>
         <span class="help-block">Image file for this page.</span>
         <% } %>
         <input type="hidden" name="type" value="<%= model.get("type") %>">
