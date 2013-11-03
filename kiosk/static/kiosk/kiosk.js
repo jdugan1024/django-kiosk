@@ -337,10 +337,11 @@
                 success: function(response) {
                     var data = $.parseJSON(response);
                     console.log("image success:", response);
+                    self.filesSaved = true;
+                    self.set(data);
                     if(callback) {
                         callback(response);
                     }
-                    self.trigger("imageUpdated");
                 }
             });
         },
@@ -625,14 +626,15 @@
         el: "#Page",
 
         initialize: function() {
-            this.listenTo(this.model, "imageUpdated", this.backgroundChange);
+            this.listenTo(this.model, "change:page_image", this.backgroundChange);
         },
 
         backgroundChange: function() {
-            // we need to bust the cache
-            console.log("background change", this.model.get("page_image"));
-            var url = this.model.get("page_image") + "?v=" + new Date().getTime();
-            this.$el.css("background-image", "url(" + url + ")");
+            if (this.model.filesSaved) {
+                console.log("background change", this.model.get("page_image"));
+                var url = this.model.get("page_image");
+                this.$el.css("background-image", "url(" + url + ")");
+            }
         },
 
         render: function () {
@@ -795,6 +797,10 @@
                     numFiles += 1;
                 }
             });
+
+            if (numFiles > 0) {
+                this.model.filesSaved = false;
+            }
 
             if (this.model.isNew() || this.model.get("name") !== formData.name) {
                 var dups = this.options.itemCollection.where({
