@@ -6,6 +6,7 @@ from django.template import RequestContext
 from django.views.decorators.csrf import csrf_exempt
 from django.core import serializers
 from django.http import Http404
+from django.core.files.storage import FileSystemStorage
 
 try:
     import json
@@ -137,12 +138,18 @@ def kiosk_item_image(request, item_type, item_name):
 
     obj = get_object_or_404(KioskItem, type=item_type, name=item_name)
 
+    old_files = []
     for k, v in request.FILES.items():
+        old_files.append(getattr(obj, k).name)
         setattr(obj, k, v)
 
     obj.save()
 
-    print obj
+    fs =  FileSystemStorage()
+    for f in old_files:
+        fs.delete(f)
+
+    #print json.dumps(obj.serialize(), indent=4)
     r = obj.serialize()
 
     return HttpResponse(json.dumps(r))
