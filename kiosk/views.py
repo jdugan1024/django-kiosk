@@ -147,7 +147,8 @@ def kiosk_item_image(request, item_type, item_name):
 
     fs =  FileSystemStorage()
     for f in old_files:
-        fs.delete(f)
+        if f:
+            fs.delete(f)
 
     #print json.dumps(obj.serialize(), indent=4)
     r = obj.serialize()
