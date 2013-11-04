@@ -45,6 +45,7 @@
 
             this.idleTimeout = 30; // seconds
             this.idleMessageTimeout = 10; // seconds
+            this.idleTimerInhibit = false; // globally disable idle timer
 
             console.log("models");
             this.models = {
@@ -129,6 +130,16 @@
                 } else {
                     $("body").css("overflow", "hidden");
                 }
+            } else if(event.which == 84) { // T
+                if(!this.idleTimerInhibit) {
+                    console.log("globally disabling idle timer");
+                    this.stopIdleTimer();
+                    this.idleTimerInhibit = true;
+                } else {
+                    console.log("globally enabling idle timer");
+                    this.startIdleTimer();
+                    this.idleTimerInhibit = false;
+                }
             } else if(this.models.rootModel.get("mode") === "edit") {
                 console.log("check edit keys");
                 switch (event.which) {
@@ -201,7 +212,9 @@
             if(this.models.rootModel.get("mode") === "edit") {
                 this.stopIdleTimer();
             } else {
-                this.startIdleTimer();
+                if(!this.idleTimerInhibit) {
+                    this.startIdleTimer();
+                }
             }
         }
     }
