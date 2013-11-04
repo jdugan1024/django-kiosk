@@ -845,7 +845,11 @@
 
         _set_form_error: function(field, msg) {
             var control = this.$("form [name="+ field +"]");
-            control.prev().append(" <span class='text-error'>"+ msg +"</div>");
+            var target = control.prev();
+            if (!target.length) {
+                target  = this.$("#" + field + "_error");
+            }
+            target.append(" <span class='text-error'>"+ msg +"</div>");
         },
 
         delete: function() {

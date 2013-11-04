@@ -222,14 +222,14 @@ img.floatRight { float: left; margin: 5px; }
         <span class="help-block">Title of <%= model.get("type") %>, this is a descriptive summary of the <%= model.get("type") %>.</span>
 
         <% if(model.get("type") === "popup") { %>
-        <label>Image 1</label>
+        <label>Image 1<span id="popup_image1_error"></span></label>
         <div class="input-append">
           <input name="popup_image1" type="file" class="hide image-file">
           <input class="input-xlarge image-file-chosen" type="text" <%= model.formFilenameValue('popup_image1') %>>
           <a class="btn image-file-button">Select</a>
         </div>
         <span class="help-block">First image file for this popup.</span>
-        <label>Image 2</label>
+        <label>Image 2<span id="popup_image2_error"></span></label>
         <div class="input-append">
           <input name="popup_image2" type="file" class="hide image-file" onchange="console.log('changeditup!)'">
           <input class="input-xlarge image-file-chosen" type="text" <%= model.formFilenameValue('popup_image2') %>>
@@ -243,7 +243,7 @@ img.floatRight { float: left; margin: 5px; }
         <textarea name="text" rows="5" class="item-textarea" placeholder="HTML Here"><%= model.get("text") %></textarea>
         <span class="help-block">Text content for this popup.
         <% } else { %>
-        <label>Page Image</label>
+        <label>Page Image<span id="page_image_error"></span></label>
         <div class="input-append">
           <input name="page_image" type="file" class="image-file hide">
           <input class="input-xlarge image-file-chosen" type="text" <%= model.formFilenameValue('page_image') %>>
